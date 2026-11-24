@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>J.A.R.V.I.S. — установка на мой ПК (без облака)</title>
+<style>
+  :root{--bg:#03080f;--panel:#081826;--line:#1c4a5d;--cyan:#56e1f5;--teal:#4be3c0;--amber:#ffc46b;--red:#ff6b7a;--text:#d9edf6;--dim:#8aa7b5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 "Segoe UI",system-ui,-apple-system,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:34px 22px 70px}
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--cyan);color:var(--cyan);font:700 22px monospace;transform:rotate(45deg);box-shadow:0 0 22px rgba(86,225,245,.25)}
+  .logo span{transform:rotate(-45deg)}
+  h1{font-size:clamp(25px,5vw,40px);line-height:1.2;margin:34px 0 12px;letter-spacing:1px}
+  h1 em{color:var(--cyan);font-style:normal;display:block;font-size:.58em;letter-spacing:3px;margin-top:8px}
+  .lead{color:var(--dim);max-width:700px}
+  .alert{border:1px solid var(--red);border-left:4px solid var(--red);background:rgba(255,107,122,.08);padding:16px 18px;margin:26px 0;border-radius:3px}
+  .alert b{color:var(--red)}
+  .ok{border:1px solid var(--teal);border-left:4px solid var(--teal);background:rgba(75,227,192,.07);padding:16px 18px;margin:22px 0;border-radius:3px}
+  .ok b{color:var(--teal)}
+  h2{font:600 14px monospace;letter-spacing:2px;color:var(--cyan);margin:42px 0 16px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .btn{display:inline-block;background:var(--cyan);color:#04121b;text-decoration:none;font:700 12px monospace;letter-spacing:1.5px;padding:15px 22px;border-radius:3px;margin:8px 8px 8px 0}
+  .btn.alt{background:transparent;color:var(--cyan);border:1px solid var(--cyan)}
+  .btn:hover{filter:brightness(1.15)}
+  .step{border:1px solid var(--line);background:var(--panel);padding:18px 20px;margin:12px 0;border-radius:3px;display:flex;gap:18px;align-items:flex-start}
+  .n{flex:0 0 34px;height:34px;display:grid;place-items:center;border:1px solid var(--cyan);border-radius:50%;color:var(--cyan);font:700 14px monospace}
+  .step h3{margin:0 0 6px;font-size:16px}
+  .step p{margin:0;color:var(--dim);font-size:14px}
+  code{font:13px Consolas,"Courier New",monospace;color:var(--teal);background:#020a11;border:1px solid var(--line);padding:2px 6px;border-radius:2px;word-break:break-all}
+  pre{background:#020a11;border:1px solid var(--line);padding:14px;overflow:auto;border-radius:3px}
+  pre code{background:none;border:0;padding:0;color:var(--cyan)}
+  details{border:1px solid var(--line);background:var(--panel);padding:12px 16px;margin:9px 0;border-radius:3px}
+  summary{cursor:pointer;font-weight:600;color:var(--text)}
+  details p{color:var(--dim);font-size:14px;margin:10px 0 0}
+  a{color:var(--cyan)}
+  footer{margin-top:50px;border-top:1px solid var(--line);padding-top:16px;color:#5f8291;font:12px monospace}
+  .note{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo"><span>J</span></div>
+  <div><strong style="letter-spacing:3px">J.A.R.V.I.S.</strong><br><span style="color:var(--dim);font:11px monospace;letter-spacing:1px">OFFLINE INSTALL · РАБОТАЕТ БЕЗ ОБЛАКА</span></div>
+</header>
+
+<h1>УСТАНОВКА НА СВОЙ ПК<em>ЭТА СТРАНИЦА НЕ ТРЕБУЕТ СЕРВЕРА</em></h1>
+<p class="lead">Этот файл лежит прямо в архиве. Откройте его двойным кликом — и выполняйте шаги ниже. Ни песочница, ни предпросмотр, ни временная ссылка <code>*.e2b.app</code> больше не нужны.</p>
+
+<div class="alert">
+  <b>Видите в Chrome «Не удается получить доступ к сайту» / ERR_CONNECTION_REFUSED на 127.0.0.1:8080?</b><br>
+  Это значит ровно одно: <b>на вашем ПК сейчас не запущен сервер J.A.R.V.I.S.</b> Фразы Chrome про «интернет, прокси и брандмауэр» — общий шаблон; для адреса <code>127.0.0.1</code> интернет не нужен. Обновлять страницу бесполезно: сначала <b>двойной клик по START-JARVIS.bat</b> (или <code>INSTALL_WINDOWS.bat</code>, если ещё не устанавливали) и <b>не закрывайте чёрное окно консоли</b>.
+</div>
+
+<div class="alert">
+  <b>Видите «502 BAD GATEWAY / SANDBOX NOT FOUND»?</b><br>
+  Это означает только одно: <b>временная облачная песочница выключена</b>. Само приложение и установщик от этого не зависят. Игнорируйте старую ссылку вида <code>https://8080-….e2b.app</code> и используйте архив с GitHub ниже. После установки вы будете открывать <b>свой</b> адрес: <code>http://127.0.0.1:8080</code>.
+</div>
+
+<div class="ok">
+  <b>Главная ссылка, которая работает всегда:</b> архив собирается прямо из ветки репозитория на GitHub. Даже если облачный предпросмотр недоступен, эта ссылка остаётся.
+</div>
+
+<p>
+  <a class="btn" href="https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai">↓ СКАЧАТЬ АРХИВ С GITHUB</a>
+  <a class="btn alt" href="https://github.com/Sevelin123/ASSISTENT-AI/tree/arena/57b8f59e-assistent-ai">ОТКРЫТЬ РЕПОЗИТОРИЙ ↗</a>
+</p>
+<p class="lead">Если архив уже скачан и распакован — <b>шаг 1 выполнен</b>, листайте к шагу 2.</p>
+
+<h2>ТРИ ШАГА · WINDOWS 10 / 11</h2>
+
+<div class="step"><div class="n">1</div><div>
+  <h3>Распакуйте архив</h3>
+  <p>Правый клик по <code>.zip</code> → <b>«Извлечь все…»</b>. Внутри будет <code>INSTALL_WINDOWS.bat</code>, папка <code>windows\</code> и этот файл <code>START-HERE.html</code>.</p>
+</div></div>
+
+<div class="step"><div class="n">2</div><div>
+  <h3>Двойной клик по INSTALL_WINDOWS.bat</h3>
+  <p>Если Windows SmartScreen покажет предупреждение: <b>«Дополнительные сведения» → «Выполнить в любом случае»</b>. Установщик сам найдёт или поставит Python 3.9+, скопирует приложение в <code>%LOCALAPPDATA%\JARVIS</code>, создаст ярлык, автозагрузку и иконку в трее.</p>
+</div></div>
+
+<div class="step"><div class="n">3</div><div>
+  <h3>Откройте свой локальный HUD</h3>
+  <p>Через ~30 секунд браузер сам откроет <code>http://127.0.0.1:8080</code>. Разрешите микрофон, нажмите «Активировать систему» и скажите: <b>«Джарвис, который час?»</b>. Используйте <b>Chrome или Edge</b>.</p>
+</div></div>
+
+<div class="ok"><b>Готово.</b> Дальше облако не участвует: сервер и агент крутятся на вашем компьютере, заметки/задачи хранятся локально в SQLite. Ярлык «J.A.R.V.I.S.» лежит на рабочем столе.</div>
+
+<h2>«НЕ УДАЁТСЯ СВЯЗАТЬСЯ С СЕРВЕРОМ»</h2>
+<div class="alert">
+  <b>Сначала проверьте адрес.</b> Откройте <b>именно</b> <code>http://127.0.0.1:8080</code>.
+  Не <code>localhost:8080</code> (на Windows он часто уходит в IPv6 <code>::1</code>), не <code>file://.../web/index.html</code>,
+  не старую ссылку <code>*.e2b.app</code> и не адрес облачного предпросмотра. HUD должен открываться через локальный сервер.
+</div>
+<div class="step"><div class="n">0</div><div>
+  <h3>Если ещё не устанавливали — INSTALL_WINDOWS.bat</h3>
+  <p>Браузер сам сервер не запускает. Двойной клик по <code>INSTALL_WINDOWS.bat</code>, дождитесь «УСТАНОВКА ЗАВЕРШЕНА», и только потом открывайте <code>http://127.0.0.1:8080</code>.</p>
+</div></div>
+<div class="step"><div class="n">▶</div><div>
+  <h3>Видите ошибку в консоли? START-JARVIS.bat</h3>
+  <p>Двойной клик по <code>START-JARVIS.bat</code> запускает сервер в <b>видимом</b> окне: сразу видно, если не найден Python, занят порт или упал импорт. <b>Оставьте окно открытым</b> — закрытие консоли останавливает сервер и снова даёт <code>ERR_CONNECTION_REFUSED</code>. Для другого порта: <code>START-JARVIS.bat -Port 9000</code>.</p>
+</div></div>
+<div class="step"><div class="n">✚</div><div>
+  <h3>Автоматическая починка: FIX-SERVER.bat</h3>
+  <p>Он сам найдёт Python, прочитает порт из <code>jarvis.config.json</code>, покажет, кто занимает порт, остановит зависшие процессы J.A.R.V.I.S., заново поднимет сервер и агент <b>скрытно</b>, проверит <code>/api/health</code> и откроет браузер. Логи — в папке <code>logs\</code>.</p>
+</div></div>
+<div class="step"><div class="n">!</div><div>
+  <h3>Если порт 8080 занят</h3>
+  <p>Запустите <code>FIX-SERVER.bat -Port 9000</code> и откройте <code>http://127.0.0.1:9000</code>. Полностью переустановить можно повторным запуском <code>INSTALL_WINDOWS.bat -Port 9000</code>.</p>
+</div></div>
+<p class="note"><b>Сервер в консоли пишет «online», а Chrome всё равно отказывает?</b> Проверьте прокси: <code>Параметры → Система → Настройки прокси-сервера</code> → включите «Не использовать прокси-сервер для локальных адресов» / добавьте <code>127.0.0.1;localhost</code> в исключения. Либо запустите Chrome с ярлыка <code>chrome.exe --no-proxy-server</code>. Брандмауэр почти никогда не блокирует loopback, но антивирус с «защитой веб-трафика» — может.</p>
+<p class="note">В HUD при потере связи теперь появляется красная плашка с кнопками «FIX-SERVER.bat», «Архив с GitHub» и «Повторить», а в сообщении объясняется, что именно не так: <code>file://</code>, <code>localhost</code>, мёртвое облако или выключенный локальный сервер.</p>
+
+<h2>ЕСЛИ ЧТО-ТО ПОШЛО НЕ ТАК</h2>
+
+<details open><summary>Русский язык / голос не ставится в Параметрах Windows</summary>
+  <p><b>Распознаванию речи это не мешает.</b> Джарвис понимает русскую речь через браузерный Web Speech API (Chrome/Edge), а не через языковой пакет Windows. Язык задаётся в HUD: <b>Настройки → Голос и речь → Язык распознавания → Русский (ru-RU)</b>.</p>
+  <p>Для <b>озвучки ответов</b> проще всего открыть HUD в <b>Microsoft Edge</b>: там есть облачные голоса <code>Microsoft … Online (Natural)</code> без установки языкового пакета. Затем: <b>Обновить список → Голос ответа → русский → Тест речи</b>. Полностью перезапустите браузер после установки новых голосов.</p>
+  <p>Хотите системный голос: <code>Win+I → Время и язык → Речь → Управление голосами → Добавить голоса → Русский (Россия)</code>. Если не ставится — проверьте <code>winver</code> (редакция <b>Home Single Language</b> не даёт добавить пакет), права администратора, регион «Россия», обновления Windows, а от админа выполните <code>DISM /Online /Cleanup-Image /RestoreHealth</code> и <code>sfc /scannow</code>. Подробная шпаргалка создаётся установщиком: <code>%LOCALAPPDATA%\JARVIS\VOICE-HELP.txt</code>.</p>
+  <p>Озвучку можно вообще отключить: скажите <b>«Джарвис, выключи озвучивание»</b> — ответы останутся текстом.</p>
+</details>
+
+<details><summary>Окно установщика мигает и закрывается</summary>
+  <p>Запустите BAT из <code>cmd</code>, чтобы увидеть ошибку. Логи: <code>%LOCALAPPDATA%\JARVIS\install.log</code>, <code>%LOCALAPPDATA%\JARVIS\logs\server.log</code> и <code>logs\agent.log</code>.</p>
+</details>
+
+<details open><summary>ERR_CONNECTION_REFUSED / «Не удаётся связаться с сервером»</summary>
+  <p>Это значит, что <code>python jarvis.py</code> не слушает порт. Откройте <code>http://127.0.0.1:8080</code> (не <code>localhost</code>) и запустите <code>START-JARVIS.bat</code> — оставьте консоль открытой. Автоматический вариант — <code>FIX-SERVER.bat</code>. Если в <code>logs\server.err.log</code> написано «Address already in use» — порт занят, используйте <code>-Port 9000</code>. Если Python не найден — перезапустите <code>INSTALL_WINDOWS.bat</code>.</p>
+</details>
+
+<details><summary>Ссылка на предпросмотр снова не открывается</summary>
+  <p>Это нормально: <code>https://8080-….e2b.app</code> — лишь временная демонстрация. Для постоянной работы используйте <code>http://127.0.0.1:8080</code> после установки или ярлык на рабочем столе. Скачивать что-либо заново из песочницы не нужно.</p>
+</details>
+
+<details><summary>Хочу запустить без установщика / не на Windows</summary>
+  <p>Linux, macOS или ручной запуск на Windows:</p>
+  <pre><code>git clone -b arena/57b8f59e-assistent-ai https://github.com/Sevelin123/ASSISTENT-AI.git
+cd ASSISTENT-AI
+python3 jarvis.py</code></pre>
+  <p>Затем <code>http://localhost:8080</code>. Для реальных действий с ПК во втором терминале: <code>python3 jarvis_agent.py --server http://localhost:8080</code>.</p>
+</details>
+
+<details><summary>Удалить / обновить</summary>
+  <p><code>UNINSTALL_WINDOWS.bat</code> удалит приложение, но сохранит настройки и базу. <code>UNINSTALL_WINDOWS.bat -Purge</code> удалит всё. Повторный запуск <code>INSTALL_WINDOWS.bat</code> обновляет файлы, сохраняя <code>jarvis.config.json</code> и SQLite.</p>
+  <p>Параметры: <code>-Port 9000</code>, <code>-Lan</code>, <code>-NoAutostart</code>, <code>-NoTray</code>, <code>-NoLaunch</code>.</p>
+</details>
+
+<h2>ДОКУМЕНТАЦИЯ В АРХИВЕ</h2>
+<p><a href="README.md">README.md</a> · <a href="windows/README.md">windows/README.md</a> · <a href="START-JARVIS.bat">START-JARVIS.bat</a> · <a href="FIX-SERVER.bat">FIX-SERVER.bat</a> · <a href="INSTALL_WINDOWS.bat">INSTALL_WINDOWS.bat</a> · <a href="UNINSTALL_WINDOWS.bat">UNINSTALL_WINDOWS.bat</a></p>
+<p class="note">Приложение работает локально, но распознавание речи в Chrome/Edge использует онлайн-сервис браузера — для микрофона нужен интернет. Текстовый чат и команды работают офлайн.</p>
+
+<footer>J.A.R.V.I.S. · версия 1.0.0 · ветка arena/57b8f59e-assistent-ai · только стандартная библиотека Python</footer>
+
+</div>
+</body>
+</html>
