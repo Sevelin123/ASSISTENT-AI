@@ -18,12 +18,15 @@ class TestInstallerFiles(unittest.TestCase):
             "windows/setup.ps1", "windows/tray.ps1", "windows/README.md",
             "START-HERE.html", "web/install.html", "START-JARVIS.bat",
             "FIX-SERVER.bat", "windows/fix-server.ps1",
+            "SMART-MODE.bat", "JARVIS-APP.vbs", "windows/desktop.ps1",
+            "windows/smart-mode.ps1", "windows/JARVIS-App.cs",
         ):
             with self.subTest(file=rel):
                 self.assertTrue((ROOT / rel).is_file(), f"missing {rel}")
 
     def test_powershell_utf8_bom_and_crlf(self):
-        for rel in ("windows/setup.ps1", "windows/tray.ps1", "windows/fix-server.ps1"):
+        for rel in ("windows/setup.ps1", "windows/tray.ps1", "windows/fix-server.ps1",
+                   "windows/desktop.ps1", "windows/smart-mode.ps1"):
             with self.subTest(file=rel):
                 raw = (ROOT / rel).read_bytes()
                 self.assertTrue(raw.startswith(b"\xef\xbb\xbf"),
@@ -34,7 +37,7 @@ class TestInstallerFiles(unittest.TestCase):
 
     def test_batch_files_crlf_no_bom(self):
         for rel in ("INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat", "START-JARVIS.bat",
-                   "FIX-SERVER.bat", "start.bat"):
+                   "FIX-SERVER.bat", "start.bat", "SMART-MODE.bat"):
             with self.subTest(file=rel):
                 raw = (ROOT / rel).read_bytes()
                 self.assertFalse(raw.startswith(b"\xef\xbb\xbf"))
@@ -67,6 +70,8 @@ class TestInstallerFiles(unittest.TestCase):
             "Speech_OneCore", "VOICE-HELP.txt", "ms-settings:speech",
             "DISM /Online /Cleanup-Image /RestoreHealth", "Home Single Language",
             "START-JARVIS.bat", "FIX-SERVER.bat", "fix-server.ps1",
+            "SMART-MODE.bat", "JARVIS-APP.vbs", "JARVIS-APP.exe",
+            "JARVIS-App.cs", "desktop.ps1", "smart-mode.ps1", "отдельное окно",
             "Починить связь с сервером", "Запустить сервер (видимое окно)",
             "API-ключ НЕ обязателен",
             "127.0.0.1", "$winSrc = Join-Path $AppDir 'windows'",
@@ -78,7 +83,8 @@ class TestInstallerFiles(unittest.TestCase):
     def test_tray_script_contents(self):
         ps = (ROOT / "windows/tray.ps1").read_text(encoding="utf-8-sig")
         for m in ("NotifyIcon", "ContextMenuStrip", "Перезапустить сервисы",
-                  "api/status", "Application]::Run", "BalloonTip"):
+                  "api/status", "Application]::Run", "BalloonTip",
+                  "Open-JarvisApp", "JARVIS-APP.exe", "JARVIS-APP.vbs"):
             with self.subTest(marker=m):
                 self.assertIn(m, ps)
 
@@ -99,7 +105,9 @@ class TestInstallerFiles(unittest.TestCase):
                        "VOICE-HELP.txt", "START-HERE.html", "windows/README.md",
                        "START-JARVIS.bat", "FIX-SERVER.bat", "ERR_CONNECTION_REFUSED",
                        "server.err.log", "--no-proxy-server",
-                       "Нужен ли API-ключ?", "platform.openai.com/api-keys"):
+                       "Нужен ли API-ключ?", "platform.openai.com/api-keys",
+                       "Ключ из Arena", "SMART-MODE.bat", "JARVIS-APP.exe",
+                       "app-mode"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, page)
         self.assertNotIn('<link rel="stylesheet"', page)
@@ -121,6 +129,9 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("--no-proxy-server", readme)
         self.assertIn("Нужен ли API-ключ? НЕТ", readme)
         self.assertIn("console.groq.com/keys", readme)
+        self.assertIn("Можно ли взять API-ключ из Arena?", readme)
+        self.assertIn("JARVIS-APP.exe", readme)
+        self.assertIn("SMART-MODE.bat", readme)
 
     def test_api_key_is_optional_everywhere(self):
         """The installer must never imply that an API key is required."""
@@ -136,7 +147,11 @@ class TestInstallerFiles(unittest.TestCase):
             "jarvis/nlu.py": ["FAQ: API key is optional"],
             "web/index.html": ["НЕОБЯЗАТЕЛЬНО", "API-ключ НЕ нужен", "gptunnel.ru"],
             "web/app.js": ["Ключ не задан", "Ollama выбран"],
-            ".env.example": ["Всё необязательно", "API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН"],
+            ".env.example": ["Всё необязательно", "API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН", "Ключ из Arena"],
+            "jarvis/router.py": ["smart_mode"],
+            "web/app.js": ["btnSmartMode", "LOCAL LLM"],
+            "web/install.html": ["Ключ из Arena", "JARVIS-APP.exe"],
+            "windows/README.md": ["Ключ из Arena", "отдельное окно"],
         }
         for rel, needles in checks.items():
             text = (ROOT / rel).read_text(encoding="utf-8-sig" if rel.endswith(".ps1") else "utf-8")
@@ -163,6 +178,45 @@ class TestInstallerFiles(unittest.TestCase):
             for needle in needles:
                 with self.subTest(file=rel, needle=needle):
                     self.assertIn(needle, text)
+
+    def test_desktop_shell_is_a_real_app_window(self):
+        setup = (ROOT / "windows/setup.ps1").read_text(encoding="utf-8-sig")
+        for needle in ("JARVIS-APP.exe", "JARVIS-App.cs", "/target:winexe",
+                       "System.Windows.Forms.dll", "JARVIS-APP.vbs",
+                       "без вкладок браузера", "отдельное окно"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, setup)
+        cs = (ROOT / "windows/JARVIS-App.cs").read_text(encoding="utf-8")
+        for needle in ('--app=', '--user-data-dir=', 'jarvis.py --smart',
+                       '/api/health', '127.0.0.1', 'msedge.exe', 'chrome.exe'):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, cs)
+        self.assertNotIn('sh.Run "http://', cs, "no plain browser-tab launch")
+        desktop = (ROOT / "windows/desktop.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn('--app=', desktop)
+        self.assertIn('/api/health', desktop)
+        self.assertIn('jarvis.py', desktop)
+        vbs = (ROOT / "JARVIS-APP.vbs").read_text(encoding="utf-8")
+        self.assertIn("windows\\desktop.ps1", vbs)
+        self.assertIn("WindowStyle Hidden", vbs)
+
+    def test_smart_mode_installs_local_ollama_without_arena_key(self):
+        smart = (ROOT / "windows/smart-mode.ps1").read_text(encoding="utf-8-sig")
+        for needle in ("Ollama.Ollama", "winget", "ollama pull", "/api/smart",
+                       "Ключ из Arena не используется", "127.0.0.1:11434"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, smart)
+        bat = (ROOT / "SMART-MODE.bat").read_text(encoding="utf-8")
+        self.assertIn("smart-mode.ps1", bat)
+        self.assertIn("Arena/session keys are NOT used", bat)
+        self.assertIn("-InstallDir \"%~dp0.\"", bat)
+        server = (ROOT / "jarvis/server.py").read_text(encoding="utf-8")
+        self.assertIn("/api/smart", server)
+        self.assertIn("КЛЮЧ ИЗ ARENA НЕ ИСПОЛЬЗУЕТСЯ", server)
+        config = (ROOT / "jarvis/config.py").read_text(encoding="utf-8")
+        self.assertIn("enable_local_ollama", config)
+        self.assertIn("auto_local_llm", config)
+        self.assertNotIn("ARENA_API_KEY", config, "no invented Arena credential")
 
     def test_visible_launcher_contents(self):
         bat = (ROOT / "START-JARVIS.bat").read_text(encoding="utf-8")
@@ -223,6 +277,11 @@ class TestWindowsBundle(unittest.TestCase):
                 "JARVIS-Windows/START-HERE.html",
                 "JARVIS-Windows/START-JARVIS.bat",
                 "JARVIS-Windows/FIX-SERVER.bat",
+                "JARVIS-Windows/SMART-MODE.bat",
+                "JARVIS-Windows/JARVIS-APP.vbs",
+                "JARVIS-Windows/windows/JARVIS-App.cs",
+                "JARVIS-Windows/windows/desktop.ps1",
+                "JARVIS-Windows/windows/smart-mode.ps1",
                 "JARVIS-Windows/windows/fix-server.ps1",
                 "JARVIS-Windows/INSTALL_WINDOWS.bat",
                 "JARVIS-Windows/UNINSTALL_WINDOWS.bat",
@@ -253,6 +312,9 @@ class TestWindowsBundle(unittest.TestCase):
             self.assertIn("Для РФ", readme)
             self.assertIn("403 Forbidden", readme)
             self.assertIn("Работать оффлайн", readme)
+            self.assertIn("КЛЮЧ ИЗ ARENA НЕ ИСПОЛЬЗУЕТСЯ", readme)
+            self.assertIn("SMART-MODE.bat", readme)
+            self.assertIn("JARVIS-APP.exe", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):
@@ -270,7 +332,10 @@ class TestWindowsBundle(unittest.TestCase):
                       '"/install"', "/windows/README.md",
                       "/start-here", "/START-HERE.html",
                       "/download/START-JARVIS.bat", "/download/FIX-SERVER.bat",
-                      "/download/windows/", "fix-server.ps1"):
+                      "/download/windows/", "fix-server.ps1",
+                      "/SMART-MODE.bat", "/JARVIS-APP.vbs",
+                      "desktop.ps1", "smart-mode.ps1", "JARVIS-App.cs",
+                      "/api/smart"):
             self.assertIn(route, src)
 
     def test_hud_links_to_install_page(self):
@@ -284,6 +349,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn('href="/download/FIX-SERVER.bat"', html)
         self.assertIn('id="serverAlert"', html)
         self.assertIn("НЕОБЯЗАТЕЛЬНО", html)
+        self.assertIn('id="btnSmartMode"', html)
+        self.assertIn("Ключ из Arena", html)
 
     def test_install_page_has_permanent_github_link(self):
         page = (ROOT / "web/install.html").read_text(encoding="utf-8")
@@ -298,6 +365,9 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("FIX-SERVER.bat", page)
         self.assertIn("--no-proxy-server", page)
         self.assertIn("Нужен ли API-ключ?", page)
+        self.assertIn("Можно ли взять API-ключ из Arena?", page)
+        self.assertIn("JARVIS-APP.exe", page)
+        self.assertNotIn("http://localhost:8080", page, "local URL must stay 127.0.0.1")
 
     def test_russian_voice_troubleshooting_everywhere(self):
         """The 'voice won't install' answer must exist in HUD, FAQ, README and installer."""

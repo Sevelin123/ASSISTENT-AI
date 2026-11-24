@@ -55,8 +55,9 @@ WINDOWS_README = """J.A.R.V.I.S. — автоматическая установ
    - скопирует приложение в %LOCALAPPDATA%\\JARVIS
    - запустит сервер HUD и агент управления ПК
    - добавит автозагрузку, ярлык на рабочий стол и иконку в трей
-   - откроет http://127.0.0.1:8080 в браузере
-4. Разрешите микрофон и скажите: «Джарвис, который час?»
+   - соберёт JARVIS-APP.exe: отдельное окно приложения без вкладок и адресной строки
+4. ДВОЙНОЙ КЛИК по ярлыку «J.A.R.V.I.S.» или JARVIS-APP.exe — открывается ТОЛЬКО окно приложения.
+   Разрешите микрофон и скажите: «Джарвис, который час?»
 
 ОТКРЫВАТЬ НУЖНО ТОЛЬКО http://127.0.0.1:8080
 (не localhost, не file://web/index.html и не старую ссылку *.e2b.app).
@@ -75,6 +76,17 @@ API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН: без него работает вст�
 403 Forbidden = провайдер запретил внешнюю модель, а не сломал Джарвис.
 В HUD нажмите «Работать оффлайн» — оффлайн-NLU продолжит работу без ключа.
 Проверьте регион, права/баланс ключа, endpoint /v1 и имя модели.
+
+КЛЮЧ ИЗ ARENA НЕ ИСПОЛЬЗУЕТСЯ: это внутренний ключ сессии, его нельзя
+извлечь, встроить в приложение или передать. Вместо него доступен
+УМНЫЙ РЕЖИМ БЕЗ КЛЮЧА: SMART-MODE.bat один раз устанавливает Ollama
+через winget и скачивает локальную модель; JARVIS-APP.exe / кнопка
+«Умный режим» подключают её автоматически. Модель работает на вашем ПК.
+
+ОКНО ПРИЛОЖЕНИЯ: JARVIS-APP.exe запускает скрытый локальный сервер и
+открывает отдельное окно Edge/Chrome в app-mode — без вкладок, адресной
+строки и кнопок браузера. Движок браузера нужен только для Web Speech API.
+Если .exe не собран, ярлык использует JARVIS-APP.vbs (тот же режим).
 
 Для распознавания речи нужен Chrome или Edge.
 Полная документация: windows/README.md и README.md
@@ -260,9 +272,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(BASE_DIR / "START-JARVIS.bat", "START-JARVIS.bat")
         if path in ("/FIX-SERVER.bat", "/download/FIX-SERVER.bat", "/download/fix-server.bat"):
             return self._file(BASE_DIR / "FIX-SERVER.bat", "FIX-SERVER.bat")
+        if path in ("/SMART-MODE.bat", "/download/SMART-MODE.bat"):
+            return self._file(BASE_DIR / "SMART-MODE.bat", "SMART-MODE.bat")
+        if path in ("/JARVIS-APP.vbs", "/download/JARVIS-APP.vbs"):
+            return self._file(BASE_DIR / "JARVIS-APP.vbs", "JARVIS-APP.vbs")
         if path.startswith("/download/windows/"):
             name = path.rsplit("/", 1)[-1]
-            if name in {"setup.ps1", "tray.ps1", "fix-server.ps1", "README.md"}:
+            if name in {"setup.ps1", "tray.ps1", "fix-server.ps1", "desktop.ps1",
+                        "smart-mode.ps1", "JARVIS-App.cs", "README.md"}:
                 return self._file(BASE_DIR / "windows" / name, name)
         if path in ("/download/JARVIS-Windows.zip", "/download/windows-bundle", "/download/windows.zip"):
             try:
@@ -277,6 +294,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(app.router.status())
         if path == "/api/config":
             return self._json(app.config.get().public())
+        if path == "/api/smart":
+            return self._json({"ok": app.config.smart_status.startswith("ollama"),
+                               "mode": app.config.smart_status,
+                               "config": app.config.get().public()})
         if path == "/api/history":
             from urllib.parse import parse_qs, urlparse
             limit = int(parse_qs(urlparse(self.path).query).get("limit", ["50"])[0])
@@ -340,6 +361,13 @@ class Handler(BaseHTTPRequestHandler):
             app.brain.last_error = ""
             app.brain.last_hint = ""
             return self._json({"config": cfg.public()})
+
+        if path == "/api/smart":
+            # Find/start a local Ollama model. Never uses or requests an Arena key.
+            out = app.config.enable_local_ollama(force=True)
+            app.brain.last_error = ""
+            app.brain.last_hint = ""
+            return self._json({**out, "config": app.config.get().public()})
 
         if path in ("/api/history/clear", "/api/history"):
             app.memory.clear_history()
@@ -446,8 +474,9 @@ def serve(host: str | None = None, port: int | None = None, app: JarvisApp | Non
     local_url = f"http://127.0.0.1:{p}" if h in ("0.0.0.0", "127.0.0.1", "localhost", "::") else f"http://{h}:{p}"
     print(f"\n  J.A.R.V.I.S. online  →  bind {h}:{p}", flush=True)
     print(f"  ОТКРОЙТЕ НА ЭТОМ ПК: {local_url}   (не localhost)", flush=True)
-    print(f"  Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py", flush=True)
+    print(f"  Brain: {app.brain.mode}   |   Smart: {app.config.smart_status}   |   PC agent: /download/jarvis_agent.py", flush=True)
     print("  API-ключ НЕ обязателен: оффлайн-NLU работает; Ollama тоже без ключа.", flush=True)
+    print("  Ключ из Arena не используется. Окно приложения: JARVIS-APP.exe / SMART-MODE.bat.", flush=True)
     if h == "0.0.0.0":
         print(f"  Из локальной сети: http://<IP-этого-ПК>:{p}", flush=True)
     print("  ERR_CONNECTION_REFUSED? START-JARVIS.bat (видимая консоль) или FIX-SERVER.bat\n",

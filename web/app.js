@@ -663,9 +663,13 @@
       } else {
         state.lastBrainError = '';
         hideLlmAlert();
+        const smart = String(s.smart_mode || '');
+        const smartLabel = s.brain === 'llm'
+          ? (smart.startsWith('ollama') ? 'LOCAL LLM' : 'LLM')
+          : 'OFFLINE NLU';
         br.className = 'pill ' + (s.brain === 'llm' ? 'on' : 'warn');
-        br.querySelector('span').textContent = 'МОЗГ: ' + (s.brain === 'llm' ? 'LLM' : 'OFFLINE NLU');
-        $('chatMode').textContent = s.brain === 'llm' ? 'LLM' : 'ОФФЛАЙН-NLU';
+        br.querySelector('span').textContent = 'МОЗГ: ' + smartLabel;
+        $('chatMode').textContent = smartLabel;
       }
       updateAgent(s.agent);
       $('roActions').textContent = String(s.actions || 0) + ' доступно';
@@ -791,6 +795,23 @@
     }
   }
 
+  async function enableSmartMode() {
+    toast('Ищу локальную языковую модель Ollama…', 'warn');
+    try {
+      const out = await api('/api/smart', 'POST', {});
+      state.config = { ...state.config, ...(out.config || {}) };
+      fillSettings();
+      await refreshStatus();
+      if (out.ok) {
+        toast('Умный режим включён: ' + (out.model || 'Ollama') + ' · ключ не нужен');
+      } else {
+        toast('Ollama не найдена. Один раз запустите SMART-MODE.bat, затем вернитесь сюда.', 'warn');
+      }
+    } catch (e) {
+      toast('Не удалось включить умный режим: ' + e.message, 'bad');
+    }
+  }
+
   async function saveSettings() {
     const patch = {
       lang: $('setLang').value,
@@ -896,6 +917,7 @@
     $('serverAlertRetry').addEventListener('click', () => { hideServerAlert(); location.reload(); });
     $('llmAlertOffline').addEventListener('click', goOffline);
     $('btnLlmOff').addEventListener('click', goOffline);
+    $('btnSmartMode').addEventListener('click', enableSmartMode);
     $('llmAlertSettings').addEventListener('click', () => { refreshVoices(); openDrawer(true); });
     $('llmAlertHide').addEventListener('click', () => {
       state.llmAlertDismissed = true;

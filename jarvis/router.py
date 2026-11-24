@@ -142,6 +142,7 @@ class Router:
         return {
             "version": "1.0.0",
             "brain": self.brain.mode,
+            "smart_mode": self.config.smart_status,
             "brain_error": self.brain.last_error if cfg.brain_available else "",
             "brain_hint": self.brain.last_hint if cfg.brain_available else "",
             "agent": self.hub.status(),

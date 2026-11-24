@@ -3,6 +3,8 @@
 """J.A.R.V.I.S. — единая точка входа.
 
     python jarvis.py                  # запустить сервер + голосовой HUD
+    python jarvis.py --smart          # автоматически подключить локальную Ollama без ключа
+    python jarvis.py --no-smart       # не искать локальную модель при запуске
     python jarvis.py --port 9000      # на другом порту
     python jarvis.py --host 127.0.0.1 # слушать только этот ПК; открывать 127.0.0.1
     python jarvis.py cli              # текстовый режим в терминале
@@ -43,6 +45,12 @@ def cmd_server(args) -> int:
         cfg.cfg.allow_shell = True
     if args.allow_power:
         cfg.cfg.allow_power = True
+
+    # Smart mode: a real local LLM (Ollama) with NO Arena/provider API key.
+    if args.smart or (cfg.get().auto_local_llm and not args.no_smart):
+        smart = cfg.enable_local_ollama(force=bool(args.smart))
+        label = smart.get("model") or smart.get("mode")
+        print(f"  Smart mode: {label} · {smart.get('reason', '')}", flush=True)
 
     # Build the app with our (possibly patched) config.
     from jarvis.server import JarvisApp
@@ -176,6 +184,10 @@ def main() -> int:
         parser.add_argument("--api-key", default="", help="ключ OpenAI-совместимого API")
         parser.add_argument("--base-url", default="", help="адрес API, например http://localhost:11434/v1")
         parser.add_argument("--model", default="", help="имя модели")
+        parser.add_argument("--smart", action="store_true",
+                            help="принудительно найти и подключить локальную Ollama без API-ключа")
+        parser.add_argument("--no-smart", action="store_true",
+                            help="не выполнять автопоиск локальной Ollama при запуске")
         parser.add_argument("--allow-shell", action="store_true", help="разрешить команды терминала")
         parser.add_argument("--allow-power", action="store_true", help="разрешить выключение ПК")
     a.add_argument("--server", default="", help="адрес сервера J.A.R.V.I.S.")

@@ -47,10 +47,16 @@ class TestHTTPContract(unittest.TestCase):
         if p.exists():
             p.unlink()
 
-    def request(self, method: str, path: str, timeout: float = 5.0):
+    def request(self, method: str, path: str, timeout: float = 5.0,
+                payload: dict | None = None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=timeout)
         try:
-            conn.request(method, path)
+            raw = None
+            headers = {}
+            if payload is not None:
+                raw = json.dumps(payload).encode("utf-8")
+                headers["Content-Type"] = "application/json"
+            conn.request(method, path, body=raw, headers=headers)
             r = conn.getresponse()
             body = r.read()
             return r.status, dict(r.getheaders()), body
@@ -82,6 +88,49 @@ class TestHTTPContract(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertEqual(body, b"")
 
+    def test_smart_endpoint_reports_mode_without_secret(self):
+        status, _, body = self.request("GET", "/api/smart")
+        self.assertEqual(status, 200)
+        data = json.loads(body.decode("utf-8"))
+        self.assertIn("mode", data)
+        self.assertIn("config", data)
+        self.assertNotIn("llm_api_key", data["config"])
+        self.assertNotIn("agent_token", data["config"])
+
+    def test_status_exposes_smart_mode(self):
+        status, _, body = self.request("GET", "/api/status")
+        self.assertEqual(status, 200)
+        self.assertIn("smart_mode", json.loads(body.decode("utf-8")))
+
+    def test_post_smart_fills_local_model_without_arena_key(self):
+        from unittest import mock
+        from jarvis.config import ConfigStore
+
+        try:
+            with mock.patch.object(ConfigStore, "_ollama_models",
+                                   return_value=["llama3.2:3b"]), \
+                 mock.patch.object(ConfigStore, "_start_ollama",
+                                   return_value=False) as starter:
+                status, _, body = self.request("POST", "/api/smart", payload={})
+            self.assertEqual(status, 200)
+            out = json.loads(body.decode("utf-8"))
+            self.assertTrue(out["ok"])
+            self.assertEqual(out["model"], "llama3.2:3b")
+            self.assertEqual(out["base_url"], "http://localhost:11434/v1")
+            self.assertFalse(out["config"]["has_llm_key"])
+            self.assertNotIn("llm_api_key", out["config"])
+            starter.assert_not_called()
+            _, _, status_body = self.request("GET", "/api/status")
+            state = json.loads(status_body.decode("utf-8"))
+            self.assertEqual(state["smart_mode"], "ollama:llama3.2:3b")
+        finally:
+            self.request("POST", "/api/config", payload={
+                "llm_enabled": False,
+                "llm_base_url": "https://api.openai.com/v1",
+                "llm_model": "gpt-4o-mini",
+                "auto_local_llm": True,
+            })
+
     def test_get_health_still_returns_json(self):
         status, _, body = self.request("GET", "/api/health")
         self.assertEqual(status, 200)
@@ -109,7 +158,8 @@ class TestHTTPContract(unittest.TestCase):
                                b"502 BAD GATEWAY", b"START-HERE.html",
                                b"ERR_CONNECTION_REFUSED", b"FIX-SERVER.bat",
                                b"START-JARVIS.bat", b"--no-proxy-server",
-                               "Нужен ли API-ключ?".encode(), "НЕТ".encode()):
+                               "Нужен ли API-ключ?".encode(), "НЕТ".encode(),
+                               "Ключ из Arena".encode(), "JARVIS-APP.exe".encode()):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
         self.assertEqual(status, 200)

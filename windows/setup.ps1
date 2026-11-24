@@ -345,7 +345,7 @@ foreach ($sub in @('jarvis', 'web', 'tests', 'windows')) {
     }
 }
 # Ключевые файлы помощи доступны прямо в корне установки (двойной клик).
-foreach ($extra in @('START-JARVIS.bat', 'FIX-SERVER.bat', 'START-HERE.html')) {
+foreach ($extra in @('START-JARVIS.bat', 'FIX-SERVER.bat', 'START-HERE.html', 'SMART-MODE.bat', 'JARVIS-APP.vbs')) {
     $extraSrc = Join-Path $src $extra
     if (Test-Path $extraSrc) { Copy-Item $extraSrc -Destination $InstallDir -Force }
 }
@@ -353,6 +353,34 @@ foreach ($extra in @('START-JARVIS.bat', 'FIX-SERVER.bat', 'START-HERE.html')) {
 $winSrc = Join-Path $AppDir 'windows'
 if (Test-Path $winSrc) { Copy-Item $winSrc -Destination $InstallDir -Recurse -Force }
 Write-Log 'Файлы приложения, START-JARVIS.bat и FIX-SERVER.bat скопированы' 'OK'
+
+# ------------------------------------------------ desktop EXE: window, not browser tab
+foreach ($shellFile in @('desktop.ps1', 'smart-mode.ps1', 'JARVIS-App.cs')) {
+    if (-not (Test-Path (Join-Path $InstallDir "windows\$shellFile"))) {
+        Write-Log "Не найден компонент приложения windows\$shellFile" 'WARN'
+    }
+}
+
+$desktopExe = Join-Path $InstallDir 'JARVIS-APP.exe'
+$desktopVbs = Join-Path $InstallDir 'JARVIS-APP.vbs'
+$csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+if (-not (Test-Path $csc)) { $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe' }
+$csSrc = Join-Path $InstallDir 'windows\JARVIS-App.cs'
+Remove-Item $desktopExe -Force -ErrorAction SilentlyContinue
+if ((Test-Path $csc) -and (Test-Path $csSrc)) {
+    try {
+        & $csc /nologo /target:winexe /optimize+ "/out:$desktopExe" `
+            /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "$csSrc" 2>&1 |
+            ForEach-Object { Write-Log "csc: $_" 'INFO' }
+    } catch {
+        Write-Log "Не удалось собрать JARVIS-APP.exe: $_" 'WARN'
+    }
+}
+if (Test-Path $desktopExe) {
+    Write-Log 'Создан JARVIS-APP.exe — отдельное окно приложения без вкладок браузера' 'OK'
+} else {
+    Write-Log 'csc недоступен: используется JARVIS-APP.vbs (тот же app-mode)' 'WARN'
+}
 
 # Конфигурация (не перезаписываем пользовательские настройки и ключи)
 if (-not $hadConfig) {
@@ -480,10 +508,29 @@ if (-not (Test-Path $Programs)) { New-Item -ItemType Directory -Path $Programs -
 $wscript = Join-Path $env:SystemRoot 'System32\wscript.exe'
 $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 
-New-Shortcut -Path (Join-Path $Desktop 'J.A.R.V.I.S..lnk') -Target $wscript `
-    -Arguments ('"' + (Join-Path $InstallDir 'open-hud.vbs') + '"') `
-    -WorkDir $InstallDir -Icon $IconLocation -Description "Открыть голосовой HUD J.A.R.V.I.S." | Out-Null
-New-Shortcut -Path (Join-Path $Programs 'Открыть J.A.R.V.I.S..lnk') -Target $wscript `
+$desktopAppExe = Join-Path $InstallDir 'JARVIS-APP.exe'
+$desktopAppVbs = Join-Path $InstallDir 'JARVIS-APP.vbs'
+if (Test-Path $desktopAppExe) {
+    $desktopAppTarget = $desktopAppExe
+    $desktopAppArgs = ''
+} else {
+    $desktopAppTarget = $wscript
+    $desktopAppArgs = '"' + $desktopAppVbs + '"'
+}
+New-Shortcut -Path (Join-Path $Desktop 'J.A.R.V.I.S..lnk') -Target $desktopAppTarget `
+    -Arguments $desktopAppArgs -WorkDir $InstallDir -Icon $IconLocation `
+    -Description "Открыть приложение J.A.R.V.I.S. (без вкладок браузера)" | Out-Null
+New-Shortcut -Path (Join-Path $Desktop 'J.A.R.V.I.S.lnk') -Target $desktopAppTarget `
+    -Arguments $desktopAppArgs -WorkDir $InstallDir -Icon $IconLocation `
+    -Description "Открыть приложение J.A.R.V.I.S." | Out-Null
+New-Shortcut -Path (Join-Path $Programs 'Открыть J.A.R.V.I.S..lnk') -Target $desktopAppTarget `
+    -Arguments $desktopAppArgs -WorkDir $InstallDir -Icon $IconLocation | Out-Null
+New-Shortcut -Path (Join-Path $Programs 'J.A.R.V.I.S. Приложение.lnk') -Target $desktopAppTarget `
+    -Arguments $desktopAppArgs -WorkDir $InstallDir -Icon $IconLocation `
+    -Description "Отдельное окно J.A.R.V.I.S." | Out-Null
+New-Shortcut -Path (Join-Path $Programs 'Включить умный режим.lnk') `
+    -Target (Join-Path $InstallDir 'SMART-MODE.bat') -WorkDir $InstallDir | Out-Null
+New-Shortcut -Path (Join-Path $Programs 'Открыть в браузере (legacy).lnk') -Target $wscript `
     -Arguments ('"' + (Join-Path $InstallDir 'open-hud.vbs') + '"') `
     -WorkDir $InstallDir -Icon $IconLocation | Out-Null
 New-Shortcut -Path (Join-Path $Programs 'Перезапустить сервисы.lnk') -Target (Join-Path $InstallDir 'restart-services.cmd') -WorkDir $InstallDir | Out-Null
@@ -621,7 +668,10 @@ Write-Host '  ┌─────────────────────
 Write-Host '  │   УСТАНОВКА ЗАВЕРШЕНА                                  │' -ForegroundColor Cyan
 Write-Host '  └─────────────────────────────────────────────────────────┘' -ForegroundColor Cyan
 Write-Host ''
-Write-Host "    HUD:            $HudUrl" -ForegroundColor White
+$desktopAppLabel = if (Test-Path $desktopAppExe) { $desktopAppExe } else { $desktopAppVbs }
+Write-Host "    ПРИЛОЖЕНИЕ:     $desktopAppLabel" -ForegroundColor Green
+Write-Host '                    отдельное окно без вкладок и адресной строки' -ForegroundColor Gray
+Write-Host "    HUD (legacy):   $HudUrl" -ForegroundColor White
 Write-Host '    ВАЖНО:          открывать 127.0.0.1, а не localhost / file:// / *.e2b.app' -ForegroundColor Yellow
 Write-Host "    Нет связи:      $InstallDir\START-JARVIS.bat  (видимое окно, не закрывать)" -ForegroundColor Yellow
 Write-Host "                    $InstallDir\FIX-SERVER.bat   (автопочинка)" -ForegroundColor Yellow
@@ -631,6 +681,8 @@ Write-Host "    Автозагрузка:   $(if ($NoAutostart) {'выключе
 Write-Host "    Логи:           $LogDir" -ForegroundColor Gray
 Write-Host ''
 Write-Host '    Скажите «Джарвис, который час?» — и пользуйтесь ПК голосом.' -ForegroundColor Green
+Write-Host '    УМНЫЙ РЕЖИМ:   SMART-MODE.bat — локальная Ollama без ключа' -ForegroundColor Green
+Write-Host '    Ключ Arena:     НЕ используется, не извлекается и не встраивается' -ForegroundColor Yellow
 Write-Host '    API-ключ НЕ обязателен: оффлайн-NLU уже работает. Ollama — тоже без ключа.' -ForegroundColor Green
 Write-Host '    Хотите облачную LLM? Настройки HUD -> Мозг -> вставьте СВОЙ ключ.' -ForegroundColor Gray
 if (-not $ruVoice) {

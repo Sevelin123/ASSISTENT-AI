@@ -217,7 +217,7 @@
 
       <section class="form-section">
         <h3>МОЗГ · ЯЗЫКОВАЯ МОДЕЛЬ <span class="optional-tag">НЕОБЯЗАТЕЛЬНО</span></h3>
-        <div class="llm-optional"><b>API-ключ НЕ нужен.</b> Всё уже работает оффлайн: 35 действий, голос, заметки, задачи, файлы и управление ПК. Ключ нужен только если вы хотите подключить внешнюю LLM для свободных вопросов. Локальный <b>Ollama</b> работает вообще без ключа.</div>
+        <div class="llm-optional"><b>API-ключ НЕ нужен.</b> Всё уже работает оффлайн: 35 действий, голос, заметки, задачи, файлы и управление ПК. Ключ нужен только если вы хотите подключить внешнюю LLM для свободных вопросов. Локальный <b>Ollama</b> работает вообще без ключа. <b>Ключ из Arena не используется:</b> это внутренний ключ сессии, его нельзя извлечь или встроить.</div>
         <p class="hint">Без модели работает встроенный оффлайн-NLU: команды, заметки, расчёты и системная информация. С моделью — ответы на любые вопросы.</p>
         <label class="check"><input id="setLlmEnabled" type="checkbox" /><span>Использовать языковую модель</span></label>
         <label>API endpoint <input id="setBaseUrl" type="text" placeholder="https://api.openai.com/v1" /></label>
@@ -228,7 +228,9 @@
           <button class="chip-btn" data-preset="ollama">Ollama (локально)</button>
           <button class="chip-btn" data-preset="groq">Groq</button>
           <button class="chip-btn" type="button" id="btnLlmOff">✓ РАБОТАТЬ ОФФЛАЙН (БЕЗ КЛЮЧА)</button>
+          <button class="chip-btn" type="button" id="btnSmartMode">🧠 УМНЫЙ РЕЖИМ (OLLAMA, БЕЗ КЛЮЧА)</button>
         </div>
+        <p class="hint small"><b>Умный режим без ключа:</b> один раз запустите <code>SMART-MODE.bat</code> (установит Ollama и скачает локальную модель), затем нажмите «Умный режим» — endpoint и модель заполнятся автоматически. Внутренний ключ Arena не используется.</p>
         <p class="hint small"><b>403 Forbidden?</b> Это провайдер запретил доступ к внешней модели — не поломка Джарвиса. Проверьте регион, ключ, права, баланс, точный endpoint и имя модели; для РФ надёжнее Ollama или доступный OpenAI-совместимый агрегатор. Оффлайн-NLU уже работает. Подробности: <a href="/start-here" target="_blank" rel="noopener">START-HERE.html</a>.</p>
         <p class="hint small">Ollama: <code>http://localhost:11434/v1</code> · модель <code>llama3.1</code> · <b>ключ не нужен</b>. Облачный ключ создаёте только вы: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a> или <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (бесплатный тариф)</a>. <b>Для РФ:</b> официальный OpenAI API недоступен, а Groq из РФ может блокироваться — надёжнее Ollama или OpenAI-совместимый агрегатор, доступный в вашем регионе (<a href="https://www.gptunnel.ru/en/docs" target="_blank" rel="noopener">GPTunnel</a>, <a href="https://proxyapi.ru/docs/openai-compatible-api" target="_blank" rel="noopener">ProxyAPI</a>): endpoint, модель и ключ берутся из его личного кабинета. Ключ хранится только в локальном <code>jarvis.config.json</code>, не попадает в браузерный лог и в git.</p>
       </section>

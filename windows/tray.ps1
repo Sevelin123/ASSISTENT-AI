@@ -32,7 +32,7 @@ $notify.Icon = $script:icon
 $notify.Text = 'J.A.R.V.I.S. — запуск…'
 $notify.Visible = $true
 $notify.BalloonTipTitle = 'J.A.R.V.I.S.'
-$notify.BalloonTipText  = "Система активна. Откройте $($script:HudUrl)"
+$notify.BalloonTipText  = 'Система активна. Откройте приложение J.A.R.V.I.S.'
 $notify.ShowBalloonTip(3000)
 
 $menu = [System.Windows.Forms.ContextMenuStrip]::new()
@@ -44,13 +44,25 @@ function Add-Item {
     $menu.Items.Add($item) | Out-Null
 }
 
-Add-Item 'Открыть J.A.R.V.I.S.' { Start-Process $script:HudUrl }
+$script:desktopExe = Join-Path $InstallDir 'JARVIS-APP.exe'
+$script:desktopVbs = Join-Path $InstallDir 'JARVIS-APP.vbs'
+function Open-JarvisApp {
+    if (Test-Path $script:desktopExe) {
+        Start-Process -FilePath $script:desktopExe
+    } elseif (Test-Path $script:desktopVbs) {
+        Start-Process -FilePath $script:wscript -ArgumentList ('"' + $script:desktopVbs + '"')
+    } else {
+        Start-Process $script:HudUrl
+    }
+}
+
+Add-Item 'Открыть J.A.R.V.I.S.' { Open-JarvisApp }
 Add-Item 'Перезапустить сервисы' {
     & $script:stopCmd 2>$null | Out-Null
     Start-Sleep -Milliseconds 800
     Start-Process -FilePath $script:wscript -ArgumentList ('"' + $script:bgVbs + '"') -WindowStyle Hidden
     Start-Sleep -Seconds 2
-    Start-Process $script:HudUrl
+    Open-JarvisApp
 }
 Add-Item 'Остановить сервисы' { & $script:stopCmd 2>$null | Out-Null }
 Add-Item 'Открыть логи'       { Start-Process (Join-Path $InstallDir 'logs') }
@@ -74,7 +86,7 @@ Add-Item 'Выход из трея' {
 }
 
 $notify.ContextMenuStrip = $menu
-$notify.Add_DoubleClick({ Start-Process $script:HudUrl })
+$notify.Add_DoubleClick({ Open-JarvisApp })
 
 $timer = [System.Windows.Forms.Timer]::new()
 $timer.Interval = 10000

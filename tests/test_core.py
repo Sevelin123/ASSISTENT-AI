@@ -236,6 +236,57 @@ class TestSkills(unittest.TestCase):
             self.assertIn(name, base.ACTIONS)
 
 
+class TestSmartMode(unittest.TestCase):
+    """Local Ollama autodetect must never need or invent an Arena/provider key."""
+
+    def setUp(self):
+        import jarvis.config as cfgmod
+        self.orig = cfgmod.CONFIG_FILE
+        self.tmpdir = tempfile.TemporaryDirectory()
+        cfgmod.CONFIG_FILE = Path(self.tmpdir.name) / "smart.json"
+        self.store = ConfigStore(Config(llm_enabled=True, llm_api_key=""))
+
+    def tearDown(self):
+        import jarvis.config as cfgmod
+        cfgmod.CONFIG_FILE = self.orig
+        self.tmpdir.cleanup()
+
+    def test_force_smart_fills_endpoint_and_model_without_any_key(self):
+        with mock.patch.object(ConfigStore, "_ollama_models",
+                               return_value=["llama3.2:3b"]) as models, \
+             mock.patch.object(ConfigStore, "_start_ollama",
+                               return_value=False) as starter:
+            out = self.store.enable_local_ollama(force=True)
+        self.assertTrue(out["ok"])
+        self.assertEqual(out["model"], "llama3.2:3b")
+        self.assertEqual(out["base_url"], "http://localhost:11434/v1")
+        cfg = self.store.get()
+        self.assertEqual(cfg.llm_api_key, "")
+        self.assertTrue(cfg.llm_enabled)
+        self.assertEqual(self.store.smart_status, "ollama:llama3.2:3b")
+        self.assertNotIn("llm_api_key", cfg.public())
+        starter.assert_not_called()
+        models.assert_called()
+
+    def test_silent_autodetect_does_not_start_ollama_when_unavailable(self):
+        with mock.patch.object(ConfigStore, "_ollama_models", return_value=[]), \
+             mock.patch.object(ConfigStore, "_start_ollama",
+                               return_value=False) as starter:
+            out = self.store.enable_local_ollama()
+        self.assertFalse(out["ok"])
+        self.assertEqual(out["mode"], "offline")
+        self.assertIn("SMART-MODE.bat", out["reason"])
+        starter.assert_not_called()
+        self.assertFalse(self.store.get().brain_available)
+
+    def test_go_offline_clears_smart_status(self):
+        with mock.patch.object(ConfigStore, "_ollama_models",
+                               return_value=["qwen2.5:3b"]):
+            self.store.enable_local_ollama(force=True)
+        self.store.update({"llm_enabled": False})
+        self.assertEqual(self.store.smart_status, "offline")
+
+
 class TestRouter(unittest.TestCase):
     def setUp(self):
         import jarvis.config as cfgmod

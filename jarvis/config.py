@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import threading
+import time
+import urllib.request
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from shutil import which
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web"
@@ -33,6 +37,7 @@ class Config:
     llm_model: str = "gpt-4o-mini"
     llm_timeout: float = 25.0
     llm_enabled: bool = True  # auto-disabled when no key and no local endpoint
+    auto_local_llm: bool = True  # detect and use a local Ollama model without any API key
 
     # --- persona & voice ---
     user_name: str = ""
@@ -119,6 +124,7 @@ def load_config() -> Config:
         "require_confirm": "JARVIS_REQUIRE_CONFIRM",
         "demo_fallback": "JARVIS_DEMO_FALLBACK",
         "llm_enabled": "JARVIS_LLM_ENABLED",
+        "auto_local_llm": "JARVIS_AUTO_LOCAL_LLM",
     }
 
     for key, value in data.items():
@@ -148,6 +154,91 @@ class ConfigStore:
     def __init__(self, cfg: Config | None = None):
         self._lock = threading.RLock()
         self.cfg = cfg or load_config()
+        if self.cfg.llm_enabled and self.cfg.local_llm:
+            self.smart_status = "ollama:" + self.cfg.llm_model
+        elif self.cfg.has_llm_key:
+            self.smart_status = "cloud"
+        else:
+            self.smart_status = "offline"
+
+    @staticmethod
+    def _ollama_models(timeout: float = 0.5) -> list[str]:
+        """Return installed Ollama model ids, without requiring an API key."""
+        urls = (
+            "http://127.0.0.1:11434/v1/models",
+            "http://127.0.0.1:11434/api/tags",
+        )
+        for url in urls:
+            try:
+                with urllib.request.urlopen(url, timeout=timeout) as resp:
+                    data = json.loads(resp.read().decode("utf-8", "replace"))
+                if not isinstance(data, dict):
+                    continue
+                items = data.get("data") or data.get("models") or []
+                ids = [str(x.get("id") or x.get("name") or "").strip()
+                       for x in items if isinstance(x, dict)]
+                ids = [x for x in ids if x]
+                if ids:
+                    return ids
+            except Exception:
+                continue
+        return []
+
+    @staticmethod
+    def _ollama_ready() -> bool:
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=0.3) as resp:
+                return 200 <= resp.status < 300
+        except Exception:
+            return False
+
+    def _start_ollama(self) -> bool:
+        exe = which("ollama") or which("ollama.exe")
+        if not exe or self._ollama_ready():
+            return False
+        try:
+            kw = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL,
+                  "stderr": subprocess.DEVNULL}
+            if os.name == "nt":
+                kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            subprocess.Popen([exe, "serve"], **kw)
+            for _ in range(12):
+                time.sleep(0.25)
+                if self._ollama_ready():
+                    return True
+        except Exception:
+            return False
+        return False
+
+    def enable_local_ollama(self, force: bool = False) -> dict:
+        """Make the app smarter with a local model; no Arena/provider key used."""
+        cfg = self.get()
+        if not force and (cfg.has_llm_key or not cfg.llm_enabled or not cfg.auto_local_llm):
+            self.smart_status = "cloud" if cfg.has_llm_key else "offline"
+            return {"ok": False, "mode": self.smart_status,
+                    "reason": "Автоподключение пропущено согласно настройкам. Нажмите «Умный режим», --smart или SMART-MODE.bat."}
+
+        models = self._ollama_models()
+        # Explicit --smart / /api/smart may also start a local Ollama service.
+        # Ordinary startup only detects an already-running service, so it stays fast.
+        if force and not models and self._start_ollama():
+            models = self._ollama_models(timeout=1.0)
+        if not models:
+            self.smart_status = "offline"
+            return {"ok": False, "mode": "offline",
+                    "reason": "Локальная Ollama не найдена. Запустите SMART-MODE.bat один раз."}
+
+        preferred = [m for m in models if m.startswith(("llama3.1", "llama3.2", "qwen2.5"))]
+        model = preferred[0] if preferred else models[0]
+        with self._lock:
+            self.cfg.llm_enabled = True
+            self.cfg.llm_base_url = "http://localhost:11434/v1"
+            self.cfg.llm_model = model
+            self.save()
+        self.smart_status = "ollama:" + model
+        return {"ok": True, "mode": "ollama", "model": model,
+                "base_url": self.cfg.llm_base_url,
+                "reason": "Локальная языковая модель подключена без API-ключа."}
 
     def get(self) -> Config:
         with self._lock:
@@ -157,8 +248,8 @@ class ConfigStore:
         allowed = {
             "user_name", "persona", "lang", "wake_word", "speak_replies", "listen_mode",
             "voice_rate", "voice_pitch", "llm_base_url", "llm_api_key", "llm_model",
-            "llm_enabled", "allow_shell", "allow_power", "require_confirm", "sandbox_root",
-            "agent_token",
+            "llm_enabled", "auto_local_llm", "allow_shell", "allow_power", "require_confirm",
+            "sandbox_root", "agent_token",
         }
         with self._lock:
             for k, v in patch.items():
@@ -172,6 +263,12 @@ class ConfigStore:
                             continue
                     setattr(self.cfg, k, v)
             self.save()
+            if not self.cfg.brain_available:
+                self.smart_status = "offline"
+            elif self.cfg.local_llm:
+                self.smart_status = "ollama:" + self.cfg.llm_model
+            else:
+                self.smart_status = "cloud"
             return self.cfg
 
     def save(self) -> None:
@@ -180,7 +277,7 @@ class ConfigStore:
             # Persist user-editable settings only; secrets stay in this local file.
             keys = (
                 "host", "port", "llm_base_url", "llm_api_key", "llm_model", "llm_enabled",
-                "user_name", "persona", "lang", "wake_word", "speak_replies", "listen_mode",
+                "auto_local_llm", "user_name", "persona", "lang", "wake_word", "speak_replies", "listen_mode",
                 "voice_rate", "voice_pitch", "allow_shell", "allow_power", "require_confirm",
                 "sandbox_root", "agent_token",
             )

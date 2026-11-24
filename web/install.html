@@ -172,8 +172,8 @@
   <div class="panel">
     <p>Linux и macOS: клонируй репозиторий и запусти двумя командами.</p>
     <div class="code"><code>git clone -b arena/57b8f59e-assistent-ai https://github.com/Sevelin123/ASSISTENT-AI.git &amp;&amp; cd ASSISTENT-AI &amp;&amp; python3 jarvis.py</code><button data-copy="unix">КОПИРОВАТЬ</button></div>
-    <p>Затем <code class="inl">http://localhost:8080</code>. Для управления ПК во втором терминале:
-      <code class="inl">python3 jarvis_agent.py --server http://localhost:8080</code></p>
+    <p>Затем <code class="inl">http://127.0.0.1:8080</code>. Для управления ПК во втором терминале:
+      <code class="inl">python3 jarvis_agent.py --server http://127.0.0.1:8080</code></p>
   </div>
 
   <h2>ЧАСТЫЕ ВОПРОСЫ</h2>
@@ -182,6 +182,13 @@
       <p><b>НЕТ.</b> Установщик создаёт конфиг <b>без ключей</b>, и Джарвис сразу работает оффлайн: 35 действий, голос, заметки, задачи, файлы, расчёты и управление ПК. Ключ — только опциональный «мозг» для свободных разговоров с внешней LLM.</p>
       <p>Хотите подключить? <b>Настройки → Мозг · Языковая модель</b>. Самый простой путь без ключа и без интернета — <b>Ollama</b>: <code class="inl">ollama pull llama3.1</code> → <code class="inl">ollama serve</code> → пресет <b>Ollama (локально)</b> → сохранить. Для облака нужен <i>ваш</i> ключ: <a href="https://console.groq.com/keys" style="color:var(--cyan)">Groq (бесплатный тариф, из РФ может блокироваться)</a> или <a href="https://platform.openai.com/api-keys" style="color:var(--cyan)">OpenAI</a> (РФ нет в <a href="https://help.openai.com/en/articles/7947663-chatgpt-supported-countries" style="color:var(--cyan)">официальном списке</a>). Для РФ обычно берут Ollama или OpenAI-совместимый агрегатор вроде <a href="https://www.gptunnel.ru/en/docs" style="color:var(--cyan)">GPTunnel</a> / <a href="https://proxyapi.ru/docs/openai-compatible-api" style="color:var(--cyan)">ProxyAPI</a>: его endpoint, модель и ключ указаны в личном кабинете. Ключ хранится только локально и не попадает в git/логи.</p>
       <p>Я ключ не выдаю: он создаётся в личном кабинете провайдера. Если оставить поле пустым — ничего не сломается, останется <code class="inl">МОЗГ: OFFLINE NLU</code>.</p>
+    </details>
+    <details open><summary>Можно ли взять API-ключ из Arena?</summary>
+      <p><b>Нет. Ключ из Arena использовать нельзя.</b> Ключ сессии Arena — внутренний секрет, недоступный приложению; его нельзя извлечь, передать или встроить. Коннектор <code class="inl">arena</code> в этой сессии недоступен (<code class="inl">unsupported</code>). Я не выдаю чужие ключи и не прошу ваш ключ в чате.</p>
+      <p>Вместо этого: <b>SMART-MODE.bat</b> один раз устанавливает локальную Ollama и модель <code class="inl">llama3.2:3b</code>, а кнопка <b>«Умный режим»</b> в HUD или <code class="inl">python jarvis.py --smart</code> подключают её автоматически. Пилка станет <code class="inl">МОЗГ: LOCAL LLM</code>. Ключ не нужен, модель работает на вашем ПК.</p>
+    </details>
+    <details open><summary>Будет отдельное приложение или вкладка браузера?</summary>
+      <p>Установщик собирает <code class="inl">JARVIS-APP.exe</code> из <code class="inl">windows/JARVIS-App.cs</code> и ставит ярлык «J.A.R.V.I.S.» на рабочий стол. Двойной клик открывает <b>отдельное окно app-mode без вкладок и адресной строки</b>; скрытый локальный сервер поднимается сам. Chromium под капотом нужен только для микрофона/Web Speech API. Если компилятор .NET недоступен, используется <code class="inl">JARVIS-APP.vbs</code> → <code class="inl">windows/desktop.ps1</code> с тем же окном. Обычную вкладку можно открыть ярлыком «legacy» для диагностики.</p>
     </details>
     <details open><summary>«Языковая модель недоступна» / 403 Forbidden</summary>
       <p><b>Приложение не сломалось.</b> Это ответ внешнего провайдера LLM: доступ запрещён. Джарвис уже работает через оффлайн-NLU. В HUD нажмите <b>«Работать оффлайн»</b> или снимите галочку <b>Настройки → Мозг → Использовать языковую модель</b> — ключ после этого не нужен.</p>
