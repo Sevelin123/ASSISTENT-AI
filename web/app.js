@@ -736,6 +736,12 @@
     };
     const key = $('setApiKey').value.trim();
     if (key) patch.llm_api_key = key;
+    const baseUrl = $('setBaseUrl').value.trim().toLowerCase();
+    const localLlm = /localhost|127\.0\.0\.1|0\.0\.0\.0|::1/.test(baseUrl);
+    const hasKey = !!state.config?.has_llm_key || !!key;
+    if ($('setLlmEnabled').checked && !localLlm && !hasKey) {
+      toast('Ключ не задан — останется оффлайн-NLU, это нормально. Для Ollama ключ не нужен.', 'warn');
+    }
     const token = $('setAgentToken').value.trim();
     if (token) patch.agent_token = token;
     try {
@@ -761,7 +767,12 @@
     if (!p) return;
     $('setBaseUrl').value = p[0]; $('setModel').value = p[1];
     $('setLlmEnabled').checked = true;
-    toast(`Пресет «${name}» выбран — не забудьте сохранить`);
+    if (name === 'ollama') {
+      $('setApiKey').value = '';
+      toast('Ollama выбран — API-ключ НЕ нужен. Запустите ollama serve и сохраните.', 'warn');
+    } else {
+      toast(`Пресет «${name}» выбран — вставьте свой ключ и сохраните`);
+    }
   }
 
   // ───────────────────────────────────────────── commands modal

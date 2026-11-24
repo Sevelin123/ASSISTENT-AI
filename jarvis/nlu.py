@@ -96,6 +96,10 @@ def _find(rules, text):
 Rule = tuple[str, Callable[[str, re.Match], Iterable[Intent] | Intent | None]]
 
 RULES: list[Rule] = [
+    # ---- FAQ: API key is optional. Answer offline even when '?' is stripped. ----
+    (r"(?:нужен ли|нужно ли|обязателен ли|обязательно ли|требуется ли|надо ли|нужен|нужно|обязателен|обязательно|требуется|надо|где (?:взять|получить)|как (?:получить|создать))\s+(?:api[- ]?ключ|ключ\s+(?:api|от openai|для llm)|api key)\b|\b(?:api[- ]?ключ|api key)\s+(?:нужен|нужно|обязателен|обязательно|требуется|надо|где взять)\b",
+     lambda t, m: I("llm.ask", question=t)),
+
     # ---- help & persona ----
     (r"(что ты умеешь|что умеешь|список команд|помощь|help|возможности|команды|что можно|как тобой пользоваться)",
      lambda t, m: I("chat.help")),

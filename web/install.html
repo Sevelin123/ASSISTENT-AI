@@ -178,6 +178,11 @@
 
   <h2>ЧАСТЫЕ ВОПРОСЫ</h2>
   <div class="faq">
+    <details open><summary>Нужен ли API-ключ?</summary>
+      <p><b>НЕТ.</b> Установщик создаёт конфиг <b>без ключей</b>, и Джарвис сразу работает оффлайн: 35 действий, голос, заметки, задачи, файлы, расчёты и управление ПК. Ключ — только опциональный «мозг» для свободных разговоров с внешней LLM.</p>
+      <p>Хотите подключить? <b>Настройки → Мозг · Языковая модель</b>. Самый простой путь без ключа и без интернета — <b>Ollama</b>: <code class="inl">ollama pull llama3.1</code> → <code class="inl">ollama serve</code> → пресет <b>Ollama (локально)</b> → сохранить. Для облака нужен <i>ваш</i> ключ: <a href="https://console.groq.com/keys" style="color:var(--cyan)">Groq (бесплатный тариф, из РФ может блокироваться)</a> или <a href="https://platform.openai.com/api-keys" style="color:var(--cyan)">OpenAI</a> (РФ нет в <a href="https://help.openai.com/en/articles/7947663-chatgpt-supported-countries" style="color:var(--cyan)">официальном списке</a>). Для РФ обычно берут Ollama или OpenAI-совместимый агрегатор вроде <a href="https://www.gptunnel.ru/en/docs" style="color:var(--cyan)">GPTunnel</a> / <a href="https://proxyapi.ru/docs/openai-compatible-api" style="color:var(--cyan)">ProxyAPI</a>: его endpoint, модель и ключ указаны в личном кабинете. Ключ хранится только локально и не попадает в git/логи.</p>
+      <p>Я ключ не выдаю: он создаётся в личном кабинете провайдера. Если оставить поле пустым — ничего не сломается, останется <code class="inl">МОЗГ: OFFLINE NLU</code>.</p>
+    </details>
     <details open><summary>Не удаётся связаться с сервером / ERR_CONNECTION_REFUSED</summary>
       <p><b>1. Откройте именно <code class="inl">http://127.0.0.1:8080</code></b> — не <code class="inl">localhost:8080</code> (на Windows он часто уходит в IPv6 <code class="inl">::1</code>), не <code class="inl">file://.../web/index.html</code> и не старую ссылку <code class="inl">*.e2b.app</code>. HUD работает только через локальный сервер.</p>
       <p><b>2. Если ещё не устанавливали — <code class="inl">INSTALL_WINDOWS.bat</code>.</b> Браузер сам сервер не запускает: <code class="inl">ERR_CONNECTION_REFUSED</code> означает «ничего не слушает порт 8080», а не «нет интернета».</p>

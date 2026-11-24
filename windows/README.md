@@ -37,6 +37,23 @@
 
 Параметры: `FIX-SERVER.bat -Port 9000 -NoLaunch -NoAgent`, `START-JARVIS.bat -Port 9000`. В HUD при обрыве связи появляется красная плашка с диагнозом и кнопками `START-JARVIS.bat` / `FIX-SERVER.bat`.
 
+---
+
+## API-ключ: не обязателен
+
+Установщик пишет `Создан jarvis.config.json (без API-ключей)` — **это нормально**. Оффлайн-NLU уже умеет 35 действий, голос, заметки, задачи и управление ПК. Ключ включают только по желанию, чтобы внешняя LLM отвечала на свободные вопросы.
+
+В HUD: **Настройки → Мозг · Языковая модель**. Пресеты:
+
+| Провайдер | Ключ | Endpoint |
+|---|---|---|
+| **Ollama (локально)** | **не нужен** | `http://localhost:11434/v1` |
+| Groq | бесплатный тариф, `console.groq.com/keys` | `https://api.groq.com/openai/v1` (из РФ прямой доступ может блокироваться) |
+| OpenAI | `platform.openai.com/api-keys` | `https://api.openai.com/v1` (РФ нет в официальном списке поддерживаемых стран) |
+| Агрегатор OpenAI-совместимого API в РФ | ключ из личного кабинета | например `https://gptunnel.ru/v1` / `https://api.proxyapi.ru/v1`, модель и точный адрес смотрите в документации (<https://proxyapi.ru/docs/openai-compatible-api>) |
+
+Для Ollama: `ollama pull llama3.1`, `ollama serve`, выбрать пресет, оставить ключ пустым, сохранить. Ключ хранится только в `%LOCALAPPDATA%\JARVIS\app\jarvis.config.json`, `/api/config` его не возвращает.
+
 ## Способ 2 — из клона репозитория
 
 ```bat

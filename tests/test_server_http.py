@@ -108,7 +108,8 @@ class TestHTTPContract(unittest.TestCase):
                                b"Home Single Language", b"ms-settings:speech",
                                b"502 BAD GATEWAY", b"START-HERE.html",
                                b"ERR_CONNECTION_REFUSED", b"FIX-SERVER.bat",
-                               b"START-JARVIS.bat", b"--no-proxy-server"):
+                               b"START-JARVIS.bat", b"--no-proxy-server",
+                               "Нужен ли API-ключ?".encode(), "НЕТ".encode()):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
         self.assertEqual(status, 200)
@@ -124,7 +125,8 @@ class TestHTTPContract(unittest.TestCase):
                                b"codeload.github.com", b"START-HERE.html",
                                b"127.0.0.1:8080", b"FIX-SERVER.bat",
                                b"START-JARVIS.bat", b"--no-proxy-server",
-                               b"ERR_CONNECTION_REFUSED"):
+                               b"ERR_CONNECTION_REFUSED", "Нужен ли API-ключ?".encode(),
+                               b"Ollama"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/start-here")
         self.assertEqual(status, 200)
@@ -157,6 +159,22 @@ class TestHTTPContract(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn(b"INSTALL_WINDOWS.bat", body)
         self.assertIn(b"START-HERE.html", body)
+        self.assertIn("API-ключ: не обязателен".encode(), body)
+
+    def test_api_key_is_documented_as_optional(self):
+        for path, needles in (
+            ("/", ["НЕОБЯЗАТЕЛЬНО".encode(), "API-ключ НЕ нужен".encode(), b"console.groq.com/keys", b"gptunnel.ru"]),
+            ("/app.js", ["Ключ не задан".encode(), "Ollama выбран".encode(), b"has_llm_key"]),
+            ("/install", ["Нужен ли API-ключ?".encode(), "НЕТ".encode(), b"Ollama", b"gptunnel.ru"]),
+            ("/start-here", ["Нужен ли API-ключ?".encode(), b"platform.openai.com/api-keys", b"gptunnel.ru"]),
+            ("/README.md", ["Нужен ли API-ключ? НЕТ".encode(), b"console.groq.com/keys", b"gptunnel.ru/v1"]),
+            ("/windows/README.md", ["API-ключ: не обязателен".encode(), b"gptunnel.ru/v1"]),
+        ):
+            with self.subTest(path=path):
+                status, _, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                for needle in needles:
+                    self.assertIn(needle, body)
 
     def test_options_preflight(self):
         status, headers, _ = self.request("OPTIONS", "/api/chat")

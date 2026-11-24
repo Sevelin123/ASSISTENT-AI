@@ -68,6 +68,7 @@ class TestInstallerFiles(unittest.TestCase):
             "DISM /Online /Cleanup-Image /RestoreHealth", "Home Single Language",
             "START-JARVIS.bat", "FIX-SERVER.bat", "fix-server.ps1",
             "Починить связь с сервером", "Запустить сервер (видимое окно)",
+            "API-ключ НЕ обязателен",
             "127.0.0.1", "$winSrc = Join-Path $AppDir 'windows'",
         ]
         for m in markers:
@@ -97,7 +98,8 @@ class TestInstallerFiles(unittest.TestCase):
                        "INSTALL_WINDOWS.bat", "http://127.0.0.1:8080",
                        "VOICE-HELP.txt", "START-HERE.html", "windows/README.md",
                        "START-JARVIS.bat", "FIX-SERVER.bat", "ERR_CONNECTION_REFUSED",
-                       "server.err.log", "--no-proxy-server"):
+                       "server.err.log", "--no-proxy-server",
+                       "Нужен ли API-ключ?", "platform.openai.com/api-keys"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, page)
         self.assertNotIn('<link rel="stylesheet"', page)
@@ -117,6 +119,30 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("START-JARVIS.bat", readme)
         self.assertIn("FIX-SERVER.bat", readme)
         self.assertIn("--no-proxy-server", readme)
+        self.assertIn("Нужен ли API-ключ? НЕТ", readme)
+        self.assertIn("console.groq.com/keys", readme)
+
+    def test_api_key_is_optional_everywhere(self):
+        """The installer must never imply that an API key is required."""
+        checks = {
+            "README.md": ["Нужен ли API-ключ? НЕТ", "Ollama (рекомендую для РФ)",
+                          "gptunnel.ru/v1", "proxyapi.ru/docs/openai-compatible-api"],
+            "START-HERE.html": ["Нужен ли API-ключ?", "НЕТ, не нужен", "gptunnel.ru"],
+            "web/install.html": ["Нужен ли API-ключ?", "НЕТ", "gptunnel.ru"],
+            "windows/README.md": ["API-ключ: не обязателен", "gptunnel.ru/v1"],
+            "windows/setup.ps1": ["API-ключ НЕ обязателен", "Создан jarvis.config.json (без API-ключей)"],
+            "jarvis/server.py": ["API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН", "Для РФ", "API-ключ НЕ обязателен"],
+            "jarvis/brain.py": ["НЕ обязателен", "я ключи не выдаю"],
+            "jarvis/nlu.py": ["FAQ: API key is optional"],
+            "web/index.html": ["НЕОБЯЗАТЕЛЬНО", "API-ключ НЕ нужен", "gptunnel.ru"],
+            "web/app.js": ["Ключ не задан", "Ollama выбран"],
+            ".env.example": ["Всё необязательно", "API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН"],
+        }
+        for rel, needles in checks.items():
+            text = (ROOT / rel).read_text(encoding="utf-8-sig" if rel.endswith(".ps1") else "utf-8")
+            for needle in needles:
+                with self.subTest(file=rel, needle=needle):
+                    self.assertIn(needle, text)
 
     def test_visible_launcher_contents(self):
         bat = (ROOT / "START-JARVIS.bat").read_text(encoding="utf-8")
@@ -203,6 +229,8 @@ class TestWindowsBundle(unittest.TestCase):
             self.assertIn("502 BAD GATEWAY", readme)
             self.assertIn("START-JARVIS.bat", readme)
             self.assertIn("FIX-SERVER.bat", readme)
+            self.assertIn("API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН", readme)
+            self.assertIn("Для РФ", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):
@@ -233,6 +261,7 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn('href="/download/START-JARVIS.bat"', html)
         self.assertIn('href="/download/FIX-SERVER.bat"', html)
         self.assertIn('id="serverAlert"', html)
+        self.assertIn("НЕОБЯЗАТЕЛЬНО", html)
 
     def test_install_page_has_permanent_github_link(self):
         page = (ROOT / "web/install.html").read_text(encoding="utf-8")
@@ -246,6 +275,7 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("START-JARVIS.bat", page)
         self.assertIn("FIX-SERVER.bat", page)
         self.assertIn("--no-proxy-server", page)
+        self.assertIn("Нужен ли API-ключ?", page)
 
     def test_russian_voice_troubleshooting_everywhere(self):
         """The 'voice won't install' answer must exist in HUD, FAQ, README and installer."""

@@ -631,7 +631,8 @@ Write-Host "    Автозагрузка:   $(if ($NoAutostart) {'выключе
 Write-Host "    Логи:           $LogDir" -ForegroundColor Gray
 Write-Host ''
 Write-Host '    Скажите «Джарвис, который час?» — и пользуйтесь ПК голосом.' -ForegroundColor Green
-Write-Host '    Для ответов на любые вопросы добавьте API-ключ в Настройках HUD.' -ForegroundColor Gray
+Write-Host '    API-ключ НЕ обязателен: оффлайн-NLU уже работает. Ollama — тоже без ключа.' -ForegroundColor Green
+Write-Host '    Хотите облачную LLM? Настройки HUD -> Мозг -> вставьте СВОЙ ключ.' -ForegroundColor Gray
 if (-not $ruVoice) {
     Write-Host '    ВНИМАНИЕ: русский системный голос не найден.' -ForegroundColor Yellow
     Write-Host '    Распознавание речи при этом РАБОТАЕТ (Chrome/Edge), а для озвучки откройте HUD в Edge' -ForegroundColor Gray

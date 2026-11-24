@@ -65,6 +65,14 @@ ERR_CONNECTION_REFUSED = сервер ещё НЕ запущен на этом �
 Или FIX-SERVER.bat — автоматическая проверка/перезапуск скрытно.
 Другой порт: START-JARVIS.bat -Port 9000 / FIX-SERVER.bat -Port 9000.
 
+API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН: без него работает встроенный оффлайн-NLU
+(команды, заметки, задачи, расчёты, файлы, управление ПК).
+Локальный Ollama тоже не требует ключа: http://localhost:11434/v1.
+Облачный ключ можно добавить позже в Настройки -> Мозг.
+Я ключи не выдаю: ключ создаётся в вашем кабинете провайдера.
+Для РФ: официальный OpenAI API недоступен, Groq может блокироваться;
+используйте Ollama или доступный OpenAI-совместимый агрегатор.
+
 Для распознавания речи нужен Chrome или Edge.
 Полная документация: windows/README.md и README.md
 
@@ -433,6 +441,7 @@ def serve(host: str | None = None, port: int | None = None, app: JarvisApp | Non
     print(f"\n  J.A.R.V.I.S. online  →  bind {h}:{p}", flush=True)
     print(f"  ОТКРОЙТЕ НА ЭТОМ ПК: {local_url}   (не localhost)", flush=True)
     print(f"  Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py", flush=True)
+    print("  API-ключ НЕ обязателен: оффлайн-NLU работает; Ollama тоже без ключа.", flush=True)
     if h == "0.0.0.0":
         print(f"  Из локальной сети: http://<IP-этого-ПК>:{p}", flush=True)
     print("  ERR_CONNECTION_REFUSED? START-JARVIS.bat (видимая консоль) или FIX-SERVER.bat\n",

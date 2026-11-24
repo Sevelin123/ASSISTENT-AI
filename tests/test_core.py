@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -33,6 +34,8 @@ class TestNLU(unittest.TestCase):
         ("напомни через 5 минут размяться", "reminder.set"),
         ("запомни, что меня зовут Тони", "memory.remember"),
         ("что ты умеешь", "chat.help"),
+        ("API-ключ нужен?", "llm.ask"),
+        ("обязателен ли API-ключ?", "llm.ask"),
         ("покажи заметки", "note.list"),
         ("сделай скриншот", "screenshot"),
         ("найди файл отчёт", "file.search"),
@@ -149,6 +152,14 @@ class TestSkills(unittest.TestCase):
         self.assertTrue(skills.execute("task.add", {"text": "сделать"}, self.ctx).ok)
         self.assertIn("сделать", skills.execute("task.list", {}, self.ctx).message)
 
+    def test_offline_answer_explains_api_key_is_optional(self):
+        for question in ("API-ключ нужен?", "где взять API ключ?", "обязателен ли API-ключ?"):
+            with self.subTest(question=question):
+                answer = self.brain.offline_answer(question)
+                self.assertIn("НЕ обязателен", answer)
+                self.assertIn("Ollama", answer)
+                self.assertNotIn("добавьте API-ключ", answer)
+
     def test_danger_requires_confirm(self):
         self.cfg.update({"allow_power": True})
         r = skills.execute("power.shutdown", {}, self.ctx)
@@ -211,6 +222,21 @@ class TestRouter(unittest.TestCase):
         out = self.router.process("посчитай 2+2", source="test")
         self.assertIn("4", out["reply"])
         self.assertEqual(out["actions"][0]["name"], "calc")
+
+    def test_public_config_never_leaks_api_key(self):
+        self.cfg.update({"llm_api_key": "sk-unit-test"})
+        public = self.cfg.get().public()
+        self.assertNotIn("llm_api_key", public)
+        self.assertNotIn("sk-unit-test", json.dumps(public, ensure_ascii=False))
+        self.assertTrue(public["has_llm_key"])
+
+    def test_api_key_question_answered_offline(self):
+        for question in ("API-ключ нужен?", "где взять API ключ?", "обязателен ли API-ключ?"):
+            with self.subTest(question=question):
+                out = self.router.process(question, source="test")
+                self.assertEqual(out["mode"], "offline")
+                self.assertIn("НЕ обязателен", out["reply"])
+                self.assertIn("Ollama", out["reply"])
 
     def test_confirmation_flow(self):
         out = self.router.process("выключи компьютер", source="test")
