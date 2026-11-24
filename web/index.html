@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#03080f" />
+  <title>J.A.R.V.I.S. — Голосовой ассистент</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <div id="app" class="app">
+
+    <!-- ══════════════════ HEADER ══════════════════ -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><span>J</span></div>
+        <div class="brand-text">
+          <h1>J.A.R.V.I.S<span class="dot">.</span></h1>
+          <p>JUST A RATHER VERY INTELLIGENT SYSTEM</p>
+        </div>
+      </div>
+
+      <div class="status-strip">
+        <div class="pill" id="pillCore"><i></i><span>ЯДРО ОНЛАЙН</span></div>
+        <div class="pill" id="pillBrain"><i></i><span>МОЗГ: ОФФЛАЙН</span></div>
+        <div class="pill" id="pillAgent"><i></i><span>ДЕМО-РЕЖИМ</span></div>
+        <div class="pill" id="pillMic"><i></i><span>МИКРОФОН ВЫКЛ</span></div>
+      </div>
+
+      <div class="top-right">
+        <div class="clock">
+          <strong id="clockTime">--:--</strong>
+          <small id="clockDate">загрузка…</small>
+        </div>
+        <button class="icon-btn" id="btnCommands" title="Список команд (?)" aria-label="Список команд">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.5v.5"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="icon-btn" id="btnSettings" title="Настройки" aria-label="Настройки">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1-2.8 2.8-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21h-4v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1-2.8-2.8.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3v-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1 2.8-2.8.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3h4v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1 2.8 2.8-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21v4h-.2a1.6 1.6 0 0 0-1.4 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ══════════════════ MAIN ══════════════════ -->
+    <main class="workspace">
+
+      <!-- LEFT : telemetry -->
+      <aside class="panel panel-left">
+        <div class="panel-head"><span class="bracket">[</span> ТЕЛЕМЕТРИЯ <span class="bracket">]</span><em id="telemetrySource">СЕРВЕР</em></div>
+
+        <div class="metric" data-metric="cpu">
+          <div class="metric-top"><span>CPU</span><b id="cpuVal">—</b></div>
+          <div class="bar"><i id="cpuBar"></i></div>
+        </div>
+        <div class="metric" data-metric="ram">
+          <div class="metric-top"><span>ОЗУ</span><b id="ramVal">—</b></div>
+          <div class="bar"><i id="ramBar"></i></div>
+        </div>
+        <div class="metric" data-metric="disk">
+          <div class="metric-top"><span>ДИСК</span><b id="diskVal">—</b></div>
+          <div class="bar"><i id="diskBar"></i></div>
+        </div>
+
+        <div class="readout">
+          <div><span>ПЛАТФОРМА</span><b id="roPlatform">—</b></div>
+          <div><span>АПТАЙМ</span><b id="roUptime">—</b></div>
+          <div><span>ДЕЙСТВИЙ</span><b id="roActions">—</b></div>
+          <div><span>ПАМЯТЬ</span><b id="roMemory">—</b></div>
+        </div>
+
+        <div class="panel-head mt"><span class="bracket">[</span> НАПОМИНАНИЯ <span class="bracket">]</span></div>
+        <div id="reminderList" class="reminders"><p class="empty">Нет активных таймеров</p></div>
+
+        <div class="panel-head mt"><span class="bracket">[</span> БЫСТРЫЕ КОМАНДЫ <span class="bracket">]</span></div>
+        <div class="chips" id="quickChips"></div>
+      </aside>
+
+      <!-- CENTER : reactor -->
+      <section class="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+
+        <div class="stage-label" id="stageLabel">СИСТЕМА ГОТОВА</div>
+
+        <div class="reactor" id="reactor">
+          <canvas id="visualizer" width="520" height="520"></canvas>
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+          <div class="reactor-center">
+            <div class="core-mark">J</div>
+            <div class="core-sub" id="coreSub">STANDBY</div>
+          </div>
+        </div>
+
+        <div class="transcript" id="transcript">Скажите «Джарвис» и команду — или нажмите на микрофон</div>
+
+        <div class="action-cards" id="actionCards"></div>
+
+        <div class="stage-hint">
+          <span><kbd>ПРОБЕЛ</kbd> — говорить</span>
+          <span><kbd>CTRL</kbd>+<kbd>SHIFT</kbd>+<kbd>J</kbd> — постоянное прослушивание</span>
+          <span><kbd>ESC</kbd> — тишина</span>
+        </div>
+      </section>
+
+      <!-- RIGHT : conversation -->
+      <aside class="panel panel-right">
+        <div class="panel-head"><span class="bracket">[</span> ДИАЛОГ <span class="bracket">]</span>
+          <button class="mini-btn" id="btnClear" title="Очистить историю">ОЧИСТИТЬ</button>
+        </div>
+        <div class="chat" id="chat"></div>
+        <div class="chat-footer">
+          <span class="live-dot"></span><span id="chatMode">ОФФЛАЙН-NLU</span>
+          <span class="sep">/</span><span id="chatAgent">СЕРВЕР</span>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ══════════════════ FOOTER / INPUT ══════════════════ -->
+    <footer class="dock">
+      <button class="mic-btn" id="btnMic" title="Нажать и говорить (Пробел)">
+        <span class="mic-halo"></span>
+        <svg class="mic-icon" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-3.5 0h7"/></svg>
+        <svg class="stop-icon" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+
+      <div class="input-wrap">
+        <span class="prompt">&gt;</span>
+        <input id="userInput" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Введите команду или говорите…" maxlength="1000" />
+        <button id="btnSend" class="send-btn" title="Отправить (Enter)">
+          <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="dock-controls">
+        <button class="mode-btn active" id="btnModePush" title="Нажатие для разговора">PTT</button>
+        <button class="mode-btn" id="btnModeWake" title="Активация по слову «Джарвис»">WAKE</button>
+        <button class="mode-btn" id="btnModeCont" title="Слушать постоянно">LIVE</button>
+        <button class="icon-btn small" id="btnMute" title="Выключить озвучивание ответов">
+          <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="slash" d="M17 9l4 6m0-6l-4 6"/></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════ ONBOARDING ══════════════════ -->
+  <div class="overlay" id="onboarding">
+    <div class="boot-card">
+      <div class="boot-top">ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ <span>v1.0.0</span></div>
+      <div class="boot-logo">J.A.R.V.I.S<span>.</span></div>
+      <p class="boot-lead">Голосовое управление компьютером. Отвечаю на вопросы, выполняю команды, помню ваши дела.</p>
+      <div class="boot-steps">
+        <div class="boot-step"><b>01</b><div><strong>Разрешите микрофон</strong><span>Распознавание речи работает в Chrome / Edge на HTTPS</span></div></div>
+        <div class="boot-step"><b>02</b><div><strong>Скажите «Джарвис, который час?»</strong><span>Или нажмите ПРОБЕЛ и говорите без ключевого слова</span></div></div>
+        <div class="boot-step"><b>03</b><div><strong>Подключите свой ПК</strong><span>Скачайте агента в Настройках — тогда команды будут выполняться на вашей машине</span></div></div>
+      </div>
+      <button class="primary-btn" id="btnBoot">АКТИВИРОВАТЬ СИСТЕМУ</button>
+      <button class="ghost-btn" id="btnBootSkip">Продолжить без микрофона (текстом)</button>
+      <div class="boot-note">Все данные остаются локально. Опасные действия требуют подтверждения.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ SETTINGS ══════════════════ -->
+  <div class="drawer-scrim" id="settingsScrim"></div>
+  <aside class="drawer" id="settingsDrawer">
+    <div class="drawer-head">
+      <div><h2>НАСТРОЙКИ СИСТЕМЫ</h2><p>Изменения применяются сразу</p></div>
+      <button class="icon-btn" id="btnCloseSettings" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="drawer-body">
+
+      <section class="form-section">
+        <h3>ГОЛОС И РЕЧЬ</h3>
+        <label>Язык распознавания
+          <select id="setLang"><option value="ru-RU">Русский (ru-RU)</option><option value="en-US">English (en-US)</option></select>
+        </label>
+        <label>Слово активации <input id="setWake" type="text" placeholder="джарвис" /></label>
+        <label>Голос ответа <select id="setVoice"><option>Автоматически</option></select></label>
+        <label>Скорость речи <div class="range-row"><input id="setRate" type="range" min="0.6" max="1.6" step="0.05" /><output id="outRate">1.00</output></div></label>
+        <label>Тон голоса <div class="range-row"><input id="setPitch" type="range" min="0.6" max="1.5" step="0.05" /><output id="outPitch">1.00</output></div></label>
+        <label class="check"><input id="setSpeak" type="checkbox" /><span>Озвучивать ответы вслух</span></label>
+      </section>
+
+      <section class="form-section">
+        <h3>ЛИЧНОСТЬ</h3>
+        <label>Стиль общения
+          <select id="setPersona">
+            <option value="jarvis">Джарвис (с характером)</option>
+            <option value="neutral">Нейтральный</option>
+            <option value="concise">Максимально краткий</option>
+          </select>
+        </label>
+        <label>Как к вам обращаться <input id="setUserName" type="text" placeholder="сэр / Тони" /></label>
+      </section>
+
+      <section class="form-section">
+        <h3>МОЗГ · ЯЗЫКОВАЯ МОДЕЛЬ</h3>
+        <p class="hint">Без модели работает встроенный оффлайн-NLU: команды, заметки, расчёты и системная информация. С моделью — ответы на любые вопросы.</p>
+        <label class="check"><input id="setLlmEnabled" type="checkbox" /><span>Использовать языковую модель</span></label>
+        <label>API endpoint <input id="setBaseUrl" type="text" placeholder="https://api.openai.com/v1" /></label>
+        <label>Модель <input id="setModel" type="text" placeholder="gpt-4o-mini" /></label>
+        <label>API-ключ <input id="setApiKey" type="password" placeholder="оставьте пустым для Ollama" /></label>
+        <div class="preset-row">
+          <button class="chip-btn" data-preset="openai">OpenAI</button>
+          <button class="chip-btn" data-preset="ollama">Ollama (локально)</button>
+          <button class="chip-btn" data-preset="groq">Groq</button>
+        </div>
+        <p class="hint small">Ollama: <code>http://localhost:11434/v1</code> · модель <code>llama3.1</code> · ключ не нужен. Ключ хранится только в локальном файле <code>jarvis.config.json</code>.</p>
+      </section>
+
+      <section class="form-section">
+        <h3>АГЕНТ УПРАВЛЕНИЯ ПК</h3>
+        <div class="agent-status" id="agentStatusBox"><i></i><span>Агент не подключён — демо-режим</span></div>
+        <p class="hint">Чтобы ассистент открывал программы и файлы <b>на вашем компьютере</b>, запустите на нём один файл:</p>
+        <div class="code-block"><code id="agentCmd">python jarvis_agent.py --server ...</code><button id="btnCopyCmd">КОПИРОВАТЬ</button></div>
+        <label>Токен агента <input id="setAgentToken" type="text" value="jarvis-local-agent" /></label>
+        <a class="download-btn" href="/download/jarvis_agent.py" download>↓ СКАЧАТЬ jarvis_agent.py</a>
+        <p class="hint small">Агент — только стандартная библиотека Python 3.9+. Никаких установок.</p>
+      </section>
+
+      <section class="form-section">
+        <h3>БЕЗОПАСНОСТЬ</h3>
+        <label class="check"><input id="setConfirm" type="checkbox" /><span>Требовать голосовое «подтверждаю» для опасных действий</span></label>
+        <label class="check"><input id="setShell" type="checkbox" /><span>Разрешить команды терминала</span></label>
+        <label class="check"><input id="setPower" type="checkbox" /><span>Разрешить выключение / перезагрузку</span></label>
+        <label>Разрешённая папка для файлов <input id="setRoot" type="text" placeholder="по умолчанию — домашняя папка" /></label>
+        <p class="hint small">Эти же ограничения дублируются флагами агента (<code>--allow-shell</code>, <code>--allow-power</code>).</p>
+      </section>
+
+      <button class="primary-btn wide" id="btnSaveSettings">СОХРАНИТЬ НАСТРОЙКИ</button>
+      <div class="drawer-foot">J.A.R.V.I.S. · собрано с нуля на Python + vanilla JS · без внешних зависимостей</div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════ COMMANDS MODAL ══════════════════ -->
+  <div class="modal-scrim" id="commandsScrim"></div>
+  <div class="modal" id="commandsModal">
+    <div class="modal-head"><h2>СПРАВОЧНИК КОМАНД</h2><button class="icon-btn" id="btnCloseCommands">✕</button></div>
+    <p class="modal-lead">Говорите естественно — «Джарвис, открой блокнот», «запомни, что меня зовут Тони», «напомни через 10 минут про созвон». Вот полный список действий:</p>
+    <div class="commands-grid" id="commandsGrid"></div>
+    <div class="examples">
+      <h3>ПРИМЕРЫ ФРАЗ</h3>
+      <div id="examplesList"></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Локальные данные ассистента (БД, память, заметки)
+.jarvis_data/
+*.db
+*.db-wal
+*.db-shm
+
+# Локальная конфигурация с API-ключами — НЕ коммитить
+jarvis.config.json
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / фронтенд-мусор (проект без сборки)
+node_modules/
+dist/
+build/
+.DS_Store
+Thumbs.db
+
+# Скриншоты и временные файлы
+*.log
+*.tmp
+screenshots/
