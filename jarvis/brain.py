@@ -97,14 +97,69 @@ class Brain:
         self.config = config_store
         self.memory = memory
         self.last_error = ""
+        self.last_hint = ""
 
     @property
     def mode(self) -> str:
         return "llm" if self.config.get().brain_available else "offline"
 
+    def _friendly_error(self, exc: Exception, cfg) -> str:
+        """Turn a provider failure into an actionable, key-free diagnosis."""
+        if isinstance(exc, urllib.error.HTTPError):
+            detail = ""
+            try:
+                raw = exc.read()
+                detail = raw.decode("utf-8", "replace").lower() if raw else ""
+            except Exception:
+                detail = ""
+            regional = "unsupported_country" in detail or "country, region" in detail
+            if exc.code == 403:
+                if regional:
+                    return ("403: провайдер отклонил запрос из неподдерживаемого региона. "
+                            "Для РФ официальный OpenAI API недоступен; используйте Ollama без ключа "
+                            "или доступный OpenAI-совместимый агрегатор. Не повторяйте запросы "
+                            "с тем же регионом — это не лечится сменой модели.")
+                if cfg.local_llm:
+                    return ("403 от локального сервера: сам Ollama ключа не требует. Проверьте, что "
+                            "запрос не идёт через reverse-proxy/брандмауэр, что адрес именно "
+                            "http://localhost:11434/v1, а прокси не подменяет Host и OLLAMA_ORIGINS.")
+                return ("403 Forbidden: провайдер запретил доступ. Проверьте, что ключ создан у того же "
+                        "провайдера, у него есть права/баланс/доступ к модели, что endpoint заканчивается "
+                        "на /v1, а регион не заблокирован. Для РФ официальный OpenAI API недоступен, "
+                        "Groq может блокироваться; Ollama работает без ключа.")
+            if exc.code == 401:
+                return ("401: ключ не принят. Проверьте, нет ли лишних пробелов, не из другого ли "
+                        "проекта/организации ключ и не отозван ли он. Ключ не присылайте в чат.")
+            if exc.code == 404:
+                return ("404: не найден endpoint или модель. Проверьте точный base URL с /v1 и имя "
+                        "модели из каталога провайдера; у агрегаторов модель часто содержит префикс.")
+            if exc.code == 429:
+                return ("429: исчерпан лимит или баланс. Подождите, проверьте квоты/тариф в кабинете "
+                        "провайдера — оффлайн-NLU продолжает работать без ключа.")
+            if exc.code >= 500:
+                return ("5xx: временная ошибка на стороне провайдера. Повторите позже; ключ и настройки "
+                        "менять не обязательно.")
+            return ("Проверьте endpoint, модель, ключ и права доступа. Оффлайн-NLU продолжает работать.")
+        if isinstance(exc, urllib.error.URLError):
+            reason = str(getattr(exc, "reason", exc)).lower()
+            if cfg.local_llm:
+                return ("Не удалось подключиться к локальной модели. Запустите `ollama serve`, "
+                        "проверьте порт 11434 и что модель скачана: `ollama pull llama3.1`.")
+            if "timed out" in reason:
+                return ("Тайм-аут облачного провайдера. Проверьте сеть/прокси и повторите позже; "
+                        "оффлайн-NLU при этом работает.")
+            return ("Сеть, DNS или прокси не пустили запрос к провайдеру. Проверьте интернет и "
+                    "настройки прокси; оффлайн-NLU при этом работает.")
+        if isinstance(exc, TimeoutError):
+            return ("Тайм-аут модели. Для Ollama проверьте `ollama serve` и загрузку модели; для облака — "
+                    "сеть провайдера. Оффлайн-NLU продолжает работать.")
+        return ("Проверьте endpoint, модель и ключ. Это не поломка ядра: оффлайн-NLU продолжает работать.")
+
     # ------------------------------------------------------------ LLM plumbing
     def _chat(self, system: str, user: str, max_tokens: int = 600) -> str | None:
         cfg = self.config.get()
+        self.last_error = ""
+        self.last_hint = ""
         url = cfg.llm_base_url.rstrip("/") + "/chat/completions"
         payload = {
             "model": cfg.llm_model,
@@ -126,8 +181,13 @@ class Brain:
                 raw = resp.read().decode("utf-8", "replace")
             data = json.loads(raw)
             return (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+        except urllib.error.HTTPError as exc:
+            self.last_error = f"HTTP {exc.code}: {exc.reason}"
+            self.last_hint = self._friendly_error(exc, cfg)
+            return None
         except Exception as exc:
             self.last_error = f"{type(exc).__name__}: {util.truncate(str(exc), 140)}"
+            self.last_hint = self._friendly_error(exc, cfg)
             return None
 
     def _context(self, history: list[dict], limit: int = 6) -> tuple[str, str]:
@@ -200,8 +260,11 @@ class Brain:
             out = self._chat(system, question, max_tokens=700)
             if out:
                 return re.sub(r"[*_`#>]", "", out).strip()
-            return (f"Языковая модель недоступна ({self.last_error}). "
-                    "Продолжаю работать в оффлайн-режиме: команды ПК, заметки и расчёты выполняются как обычно.")
+            return (f"Внешняя языковая модель отклонила запрос ({self.last_error}). "
+                    f"{self.last_hint} "
+                    "Это не поломка ядра: оффлайн-NLU уже выполняет команды ПК, заметки и расчёты. "
+                    "Чтобы убрать это предупреждение, нажмите «Работать оффлайн» или снимите галочку "
+                    "«Использовать языковую модель» в Настройках.")
         return self.offline_answer(question)
 
     def offline_answer(self, question: str) -> str:

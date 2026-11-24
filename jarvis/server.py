@@ -72,6 +72,9 @@ API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН: без него работает вст�
 Я ключи не выдаю: ключ создаётся в вашем кабинете провайдера.
 Для РФ: официальный OpenAI API недоступен, Groq может блокироваться;
 используйте Ollama или доступный OpenAI-совместимый агрегатор.
+403 Forbidden = провайдер запретил внешнюю модель, а не сломал Джарвис.
+В HUD нажмите «Работать оффлайн» — оффлайн-NLU продолжит работу без ключа.
+Проверьте регион, права/баланс ключа, endpoint /v1 и имя модели.
 
 Для распознавания речи нужен Chrome или Edge.
 Полная документация: windows/README.md и README.md
@@ -333,6 +336,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/config":
             cfg = app.config.update(body)
             app.hub.token = cfg.agent_token
+            # Any settings change clears a stale provider error (e.g. after 403).
+            app.brain.last_error = ""
+            app.brain.last_hint = ""
             return self._json({"config": cfg.public()})
 
         if path in ("/api/history/clear", "/api/history"):

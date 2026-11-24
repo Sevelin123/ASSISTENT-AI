@@ -176,6 +176,30 @@ class TestHTTPContract(unittest.TestCase):
                 for needle in needles:
                     self.assertIn(needle, body)
 
+    def test_llm_403_guidance_is_visible(self):
+        for path, needles in (
+            ("/", [b"llmAlert", "403 Forbidden".encode(), "РАБОТАТЬ ОФФЛАЙН".encode()]),
+            ("/styles.css", [b".llm-alert", b".llm-alert-actions"]),
+            ("/app.js", [b"goOffline", b"llmAlertOffline", b"btnLlmOff", "ОШИБКА LLM".encode()]),
+            ("/install", ["403 Forbidden".encode(), "Работать оффлайн".encode()]),
+            ("/start-here", ["HTTP 403 Forbidden".encode(), b"OLLAMA_ORIGINS"]),
+            ("/README.md", ["HTTP 403 Forbidden".encode(), b"brain_hint"]),
+            ("/windows/README.md", ["403 Forbidden".encode()]),
+        ):
+            with self.subTest(path=path):
+                status, _, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                for needle in needles:
+                    self.assertIn(needle, body)
+
+    def test_status_exposes_brain_hint(self):
+        status, _, body = self.request("GET", "/api/status")
+        self.assertEqual(status, 200)
+        data = json.loads(body.decode("utf-8"))
+        self.assertIn("brain_error", data)
+        self.assertIn("brain_hint", data)
+        self.assertNotIn("llm_api_key", data.get("config", {}))
+
     def test_options_preflight(self):
         status, headers, _ = self.request("OPTIONS", "/api/chat")
         self.assertEqual(status, 204)

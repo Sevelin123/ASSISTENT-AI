@@ -227,7 +227,9 @@
           <button class="chip-btn" data-preset="openai">OpenAI</button>
           <button class="chip-btn" data-preset="ollama">Ollama (локально)</button>
           <button class="chip-btn" data-preset="groq">Groq</button>
+          <button class="chip-btn" type="button" id="btnLlmOff">✓ РАБОТАТЬ ОФФЛАЙН (БЕЗ КЛЮЧА)</button>
         </div>
+        <p class="hint small"><b>403 Forbidden?</b> Это провайдер запретил доступ к внешней модели — не поломка Джарвиса. Проверьте регион, ключ, права, баланс, точный endpoint и имя модели; для РФ надёжнее Ollama или доступный OpenAI-совместимый агрегатор. Оффлайн-NLU уже работает. Подробности: <a href="/start-here" target="_blank" rel="noopener">START-HERE.html</a>.</p>
         <p class="hint small">Ollama: <code>http://localhost:11434/v1</code> · модель <code>llama3.1</code> · <b>ключ не нужен</b>. Облачный ключ создаёте только вы: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a> или <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (бесплатный тариф)</a>. <b>Для РФ:</b> официальный OpenAI API недоступен, а Groq из РФ может блокироваться — надёжнее Ollama или OpenAI-совместимый агрегатор, доступный в вашем регионе (<a href="https://www.gptunnel.ru/en/docs" target="_blank" rel="noopener">GPTunnel</a>, <a href="https://proxyapi.ru/docs/openai-compatible-api" target="_blank" rel="noopener">ProxyAPI</a>): endpoint, модель и ключ берутся из его личного кабинета. Ключ хранится только в локальном <code>jarvis.config.json</code>, не попадает в браузерный лог и в git.</p>
       </section>
 
@@ -285,6 +287,20 @@
     <div class="examples">
       <h3>ПРИМЕРЫ ФРАЗ</h3>
       <div id="examplesList"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ OPTIONAL LLM ERROR ══════════════════ -->
+  <div class="llm-alert" id="llmAlert" hidden>
+    <div>
+      <b id="llmAlertTitle">⚠ ВНЕШНЯЯ LLM НЕДОСТУПНА</b>
+      <p id="llmAlertText">Проверяю…</p>
+    </div>
+    <div class="llm-alert-actions">
+      <button type="button" id="llmAlertOffline">✓ РАБОТАТЬ ОФФЛАЙН</button>
+      <button type="button" id="llmAlertSettings">⚙ НАСТРОЙКИ</button>
+      <a href="/start-here" target="_blank" rel="noopener">? ИНСТРУКЦИЯ</a>
+      <button type="button" id="llmAlertHide" title="Скрыть">×</button>
     </div>
   </div>
 

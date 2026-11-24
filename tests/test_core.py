@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import unittest
+import urllib.error
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -160,6 +163,37 @@ class TestSkills(unittest.TestCase):
                 self.assertIn("Ollama", answer)
                 self.assertNotIn("добавьте API-ключ", answer)
 
+    def test_403_is_explained_and_falls_back_to_offline(self):
+        self.cfg.update({
+            "llm_enabled": True,
+            "llm_api_key": "sk-unit-test",
+            "llm_base_url": "https://api.openai.com/v1",
+            "llm_model": "gpt-4o-mini",
+        })
+
+        def forbidden(*_args, **_kwargs):
+            body = b'{"error":{"code":"unsupported_country_region_territory"}}'
+            raise urllib.error.HTTPError(
+                "https://api.openai.com/v1/chat/completions", 403, "Forbidden", {}, io.BytesIO(body)
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=forbidden):
+            reply = self.brain.answer("расскажи про квантовую физику")
+        self.assertEqual(self.brain.last_error, "HTTP 403: Forbidden")
+        self.assertIn("неподдерживаемого региона", self.brain.last_hint)
+        self.assertIn("Ollama", self.brain.last_hint)
+        self.assertIn("HTTP 403", reply)
+        self.assertIn("не поломка ядра", reply)
+        self.assertIn("Работать оффлайн", reply)
+        self.assertNotIn("sk-unit-test", reply)
+        self.assertNotIn("sk-unit-test", json.dumps(self.router_status_like(), ensure_ascii=False))
+
+    def router_status_like(self):
+        return {
+            "brain_error": self.brain.last_error,
+            "brain_hint": self.brain.last_hint,
+        }
+
     def test_danger_requires_confirm(self):
         self.cfg.update({"allow_power": True})
         r = skills.execute("power.shutdown", {}, self.ctx)
@@ -259,6 +293,19 @@ class TestRouter(unittest.TestCase):
         self.router.process("запомни, что меня зовут Тони", source="test")
         out = self.router.process("что ты помнишь", source="test")
         self.assertIn("Тони", out["reply"])
+
+    def test_status_exposes_brain_hint_without_secret(self):
+        self.cfg.update({"llm_base_url": "http://localhost:11434/v1", "llm_api_key": "sk-unit-test"})
+        self.router.brain.last_error = "HTTP 403: Forbidden"
+        self.router.brain.last_hint = "Проверьте регион; Ollama без ключа"
+        s = self.router.status()
+        self.assertEqual(s["brain_error"], "HTTP 403: Forbidden")
+        self.assertEqual(s["brain_hint"], "Проверьте регион; Ollama без ключа")
+        self.assertNotIn("sk-unit-test", json.dumps(s, ensure_ascii=False))
+        self.cfg.update({"llm_enabled": False})
+        s2 = self.router.status()
+        self.assertEqual(s2["brain_error"], "")
+        self.assertEqual(s2["brain_hint"], "")
 
     def test_status(self):
         s = self.router.status()

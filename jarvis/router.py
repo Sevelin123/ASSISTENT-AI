@@ -142,7 +142,8 @@ class Router:
         return {
             "version": "1.0.0",
             "brain": self.brain.mode,
-            "brain_error": self.brain.last_error,
+            "brain_error": self.brain.last_error if cfg.brain_available else "",
+            "brain_hint": self.brain.last_hint if cfg.brain_available else "",
             "agent": self.hub.status(),
             "stats": self.memory.stats(),
             "actions": len(base.ACTIONS),

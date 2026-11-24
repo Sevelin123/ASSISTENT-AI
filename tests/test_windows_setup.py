@@ -144,6 +144,26 @@ class TestInstallerFiles(unittest.TestCase):
                 with self.subTest(file=rel, needle=needle):
                     self.assertIn(needle, text)
 
+    def test_llm_403_guidance_in_docs_and_ui(self):
+        checks = {
+            "README.md": ["HTTP 403 Forbidden", "brain_hint", "platform.openai.com/docs/guides/error-codes"],
+            "START-HERE.html": ["HTTP 403 Forbidden", "OLLAMA_ORIGINS", "Работать оффлайн"],
+            "web/install.html": ["403 Forbidden", "Работать оффлайн", "console.groq.com/docs/errors"],
+            "windows/README.md": ["403 Forbidden", "ollama serve", "Host: localhost:11434"],
+            "jarvis/server.py": ["403 Forbidden = провайдер запретил внешнюю модель"],
+            "jarvis/brain.py": ["_friendly_error", "403 Forbidden: провайдер запретил доступ"],
+            "jarvis/router.py": ["brain_hint"],
+            "web/index.html": ["llmAlert", "403 Forbidden?", "btnLlmOff"],
+            "web/styles.css": [".llm-alert", ".llm-alert-actions"],
+            "web/app.js": ["goOffline", "llmAlertOffline", "ОШИБКА LLM"],
+            ".env.example": ["403 Forbidden", "JARVIS_LLM_ENABLED=0"],
+        }
+        for rel, needles in checks.items():
+            text = (ROOT / rel).read_text(encoding="utf-8-sig" if rel.endswith(".ps1") else "utf-8")
+            for needle in needles:
+                with self.subTest(file=rel, needle=needle):
+                    self.assertIn(needle, text)
+
     def test_visible_launcher_contents(self):
         bat = (ROOT / "START-JARVIS.bat").read_text(encoding="utf-8")
         for marker in ("py -3", "python", "jarvis.py", "--host 127.0.0.1",
@@ -231,6 +251,8 @@ class TestWindowsBundle(unittest.TestCase):
             self.assertIn("FIX-SERVER.bat", readme)
             self.assertIn("API-КЛЮЧ НЕ ОБЯЗАТЕЛЕН", readme)
             self.assertIn("Для РФ", readme)
+            self.assertIn("403 Forbidden", readme)
+            self.assertIn("Работать оффлайн", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):

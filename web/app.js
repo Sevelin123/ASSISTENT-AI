@@ -15,6 +15,7 @@
     rec: null, shouldRestart: false, finalBuf: '', interim: '',
     finalizeTimer: null, level: 0, analyser: null, audioCtx: null, micStream: null,
     voices: [], voiceList: [], voiceWarned: false, lastReply: '', keyHeld: false,
+    llmAlertDismissed: false, lastBrainError: '',
   };
 
   const QUICK = [
@@ -45,6 +46,46 @@
   function hideServerAlert() {
     const el = $('serverAlert');
     if (el) el.hidden = true;
+  }
+
+  function hideLlmAlert() {
+    const el = $('llmAlert');
+    if (el) el.hidden = true;
+  }
+
+  function llmDiagnosis(err, hint) {
+    const base = (hint || '').trim();
+    const e = String(err || '');
+    if (/403|Forbidden/i.test(e)) {
+      return (base || '403 Forbidden: провайдер запретил запрос. Проверьте регион, ключ, права, баланс, '
+        + 'endpoint /v1 и имя модели. Для РФ официальный OpenAI API недоступен, Groq может блокироваться.')
+        + ' Оффлайн-NLU уже работает без ключа; кнопка «Работать оффлайн» уберёт это предупреждение.';
+    }
+    if (/401/i.test(e)) {
+      return (base || '401: ключ не принят.') + ' Проверьте ключ в Настройках, не присылайте его в чат. Оффлайн-NLU работает.';
+    }
+    if (/404/i.test(e)) {
+      return (base || '404: не найден endpoint или модель.') + ' Оффлайн-NLU работает.';
+    }
+    if (/429/i.test(e)) {
+      return (base || '429: лимит или баланс исчерпан.') + ' Оффлайн-NLU работает.';
+    }
+    return (base || 'Внешняя языковая модель недоступна.')
+      + ' Это не поломка ядра: команды ПК, заметки и расчёты выполняются оффлайн-NLU.';
+  }
+
+  function showLlmAlert(err, hint) {
+    const el = $('llmAlert');
+    if (!el || state.llmAlertDismissed) return;
+    const title = $('llmAlertTitle');
+    if (title) {
+      title.textContent = /403|Forbidden/i.test(String(err || ''))
+        ? '⚠ ВНЕШНЯЯ LLM: 403 FORBIDDEN — ЭТО НЕ ОБЯЗАТЕЛЬНО'
+        : '⚠ ВНЕШНЯЯ LLM НЕДОСТУПНА — ОФФЛАЙН УЖЕ РАБОТАЕТ';
+    }
+    const text = $('llmAlertText');
+    if (text) text.textContent = llmDiagnosis(err, hint);
+    el.hidden = false;
   }
 
   function serverDiagnosis(err) {
@@ -609,9 +650,23 @@
       const s = await api('/api/status');
       state.status = s;
       const br = $('pillBrain');
-      br.className = 'pill ' + (s.brain === 'llm' ? 'on' : 'warn');
-      br.querySelector('span').textContent = 'МОЗГ: ' + (s.brain === 'llm' ? 'LLM' : 'OFFLINE NLU');
-      $('chatMode').textContent = s.brain === 'llm' ? 'LLM' : 'ОФФЛАЙН-NLU';
+      const llmErr = s.brain_error || '';
+      if (llmErr) {
+        if (state.lastBrainError !== llmErr) {
+          state.lastBrainError = llmErr;
+          state.llmAlertDismissed = false;
+        }
+        br.className = 'pill bad';
+        br.querySelector('span').textContent = 'МОЗГ: ОШИБКА LLM';
+        $('chatMode').textContent = 'ОФФЛАЙН · FALLBACK';
+        showLlmAlert(llmErr, s.brain_hint);
+      } else {
+        state.lastBrainError = '';
+        hideLlmAlert();
+        br.className = 'pill ' + (s.brain === 'llm' ? 'on' : 'warn');
+        br.querySelector('span').textContent = 'МОЗГ: ' + (s.brain === 'llm' ? 'LLM' : 'OFFLINE NLU');
+        $('chatMode').textContent = s.brain === 'llm' ? 'LLM' : 'ОФФЛАЙН-NLU';
+      }
       updateAgent(s.agent);
       $('roActions').textContent = String(s.actions || 0) + ' доступно';
       const st = s.stats || {};
@@ -721,6 +776,21 @@
     if (open) { fillSettings(); refreshStatus(); }
   }
 
+  async function goOffline() {
+    try {
+      const out = await api('/api/config', 'POST', { llm_enabled: false });
+      state.config = { ...state.config, ...(out.config || {}) };
+      state.lastBrainError = '';
+      state.llmAlertDismissed = false;
+      hideLlmAlert();
+      fillSettings();
+      await refreshStatus();
+      toast('Внешняя LLM отключена. Оффлайн-NLU работает без ключа.', 'warn');
+    } catch (e) {
+      toast('Не удалось отключить LLM: ' + e.message, 'bad');
+    }
+  }
+
   async function saveSettings() {
     const patch = {
       lang: $('setLang').value,
@@ -824,6 +894,13 @@
     });
     $('btnVoiceTest').addEventListener('click', testVoice);
     $('serverAlertRetry').addEventListener('click', () => { hideServerAlert(); location.reload(); });
+    $('llmAlertOffline').addEventListener('click', goOffline);
+    $('btnLlmOff').addEventListener('click', goOffline);
+    $('llmAlertSettings').addEventListener('click', () => { refreshVoices(); openDrawer(true); });
+    $('llmAlertHide').addEventListener('click', () => {
+      state.llmAlertDismissed = true;
+      hideLlmAlert();
+    });
     $('btnSettings').addEventListener('click', () => { refreshVoices(); openDrawer(true); });
     $('btnCloseSettings').addEventListener('click', () => openDrawer(false));
     $('settingsScrim').addEventListener('click', () => openDrawer(false));
