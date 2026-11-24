@@ -139,12 +139,17 @@ class Handler(BaseHTTPRequestHandler):
 
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, HEAD, POST, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Jarvis-Token")
         self.send_header("Cache-Control", "no-store")
 
     def _write(self, body: bytes) -> None:
-        """Client may hang up during long polling / SSE — that is not an error."""
+        """Client may hang up during long polling / SSE — that is not an error.
+
+        For HEAD requests we send the exact GET headers but no body.
+        """
+        if getattr(self, "_head_only", False):
+            return
         try:
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError, OSError):
@@ -197,6 +202,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self._cors()
         self.end_headers()
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        """Preview proxies and uptime checkers probe with HEAD, not GET."""
+        self._head_only = True
+        try:
+            self.do_GET()
+        finally:
+            self._head_only = False
 
     # ------------------------------------------------------------ GET
     def do_GET(self) -> None:  # noqa: N802
@@ -344,6 +357,16 @@ class Handler(BaseHTTPRequestHandler):
 
     # ------------------------------------------------------------ SSE
     def _sse(self) -> None:
+        # A HEAD probe must never open a long-lived event stream.
+        if getattr(self, "_head_only", False):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Content-Length", "0")
+            self.send_header("Connection", "close")
+            self._cors()
+            self.end_headers()
+            self.close_connection = True
+            return
         q = self.app.hub.events.subscribe()
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
