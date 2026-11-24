@@ -7,13 +7,14 @@ import mimetypes
 import queue
 import threading
 import time
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
 from . import util
 from .brain import Brain
-from .config import BASE_DIR, WEB_DIR, ConfigStore
+from .config import BASE_DIR, DATA_DIR, WEB_DIR, ConfigStore
 from .hub import AgentHub
 from .memory import Memory
 from .router import Router
@@ -26,7 +27,68 @@ MIME = {
     ".js": "application/javascript; charset=utf-8", ".json": "application/json; charset=utf-8",
     ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon",
     ".py": "text/x-python; charset=utf-8", ".md": "text/markdown; charset=utf-8",
+    ".bat": "application/octet-stream", ".cmd": "application/octet-stream",
+    ".ps1": "application/octet-stream", ".vbs": "application/octet-stream",
+    ".zip": "application/zip",
 }
+
+
+BUNDLE_SKIP_DIRS = {
+    ".git", ".jarvis_data", "__pycache__", "node_modules", ".venv", "venv",
+    "build", "dist", ".pytest_cache", ".mypy_cache", ".cache", "Unselected files",
+}
+BUNDLE_SKIP_FILES = {
+    "jarvis.config.json", ".env", ".env.local", ".DS_Store", "Thumbs.db",
+    "JARVIS-Windows.zip",
+}
+
+WINDOWS_README = """J.A.R.V.I.S. — автоматическая установка на Windows
+=====================================================
+
+1. РАСПАКУЙТЕ этот архив в любую папку (Правый клик -> Извлечь все...).
+2. ДВОЙНОЙ КЛИК по INSTALL_WINDOWS.bat
+3. Всё остальное установщик сделает сам:
+   - проверит/установит Python 3.9+
+   - скопирует приложение в %LOCALAPPDATA%\\JARVIS
+   - запустит сервер HUD и агент управления ПК
+   - добавит автозагрузку, ярлык на рабочий стол и иконку в трей
+   - откроет http://127.0.0.1:8080 в браузере
+4. Разрешите микрофон и скажите: «Джарвис, который час?»
+
+Для распознавания речи нужен Chrome или Edge.
+Полная документация: windows/README.md и README.md
+
+Удаление: UNINSTALL_WINDOWS.bat (данные сохранятся)
+          UNINSTALL_WINDOWS.bat -Purge (удалит всё)
+
+Параметры: INSTALL_WINDOWS.bat -Port 9000 / -Lan / -NoAutostart / -NoTray
+"""
+
+
+def build_windows_bundle() -> Path:
+    """Create a ready-to-unzip Windows installer bundle, cached on disk."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    out = DATA_DIR / "JARVIS-Windows.zip"
+    files = []
+    for p in BASE_DIR.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(BASE_DIR)
+        if any(part in BUNDLE_SKIP_DIRS for part in rel.parts):
+            continue
+        if p.name in BUNDLE_SKIP_FILES or p.suffix in (".db", ".pyc", ".log"):
+            continue
+        files.append((p, rel))
+    newest = max([p.stat().st_mtime for p, _ in files] + [0])
+    if out.exists() and out.stat().st_mtime >= newest and out.stat().st_size > 1000:
+        return out
+    tmp = out.with_suffix(".zip.tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        z.writestr("JARVIS-Windows/README-WINDOWS.txt", WINDOWS_README)
+        for p, rel in sorted(files, key=lambda x: str(x[1])):
+            z.write(p, "JARVIS-Windows/" + rel.as_posix())
+    tmp.replace(out)
+    return out
 
 
 class JarvisApp:
@@ -117,7 +179,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         if download_name:
             self.send_header("Content-Disposition", f'attachment; filename="{download_name}"')
-            self.send_header("Content-Type", "application/octet-stream")
         self._cors()
         self.end_headers()
         self._write(data)
@@ -150,6 +211,20 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(AGENT_FILE, "jarvis_agent.py")
         if path == "/README.md":
             return self._file(BASE_DIR / "README.md")
+        # ---- Windows installer ----
+        if path in ("/INSTALL_WINDOWS.bat", "/download/INSTALL_WINDOWS.bat", "/download/install_windows.bat"):
+            return self._file(BASE_DIR / "INSTALL_WINDOWS.bat", "INSTALL_WINDOWS.bat")
+        if path in ("/UNINSTALL_WINDOWS.bat", "/download/UNINSTALL_WINDOWS.bat"):
+            return self._file(BASE_DIR / "UNINSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat")
+        if path.startswith("/download/windows/"):
+            name = path.rsplit("/", 1)[-1]
+            if name in {"setup.ps1", "tray.ps1", "README.md"}:
+                return self._file(BASE_DIR / "windows" / name, name)
+        if path in ("/download/JARVIS-Windows.zip", "/download/windows-bundle", "/download/windows.zip"):
+            try:
+                return self._file(build_windows_bundle(), "JARVIS-Windows.zip")
+            except Exception as exc:
+                return self._json({"error": f"не удалось собрать архив: {exc}"}, 500)
 
         if path == "/api/health":
             return self._json({"ok": True, "uptime": round(time.time() - app.started, 1),
@@ -312,6 +387,8 @@ def serve(host: str | None = None, port: int | None = None, app: JarvisApp | Non
     server = Server((h, p), app)
     app.start_workers()
     print(f"\n  J.A.R.V.I.S. online  →  http://0.0.0.0:{p}", flush=True)
-    print(f"  HUD: http://localhost:{p}   |   Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py\n",
+    print(f"  HUD: http://localhost:{p}   |   Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py",
+          flush=True)
+    print("  Windows installer: /download/JARVIS-Windows.zip  (or /download/INSTALL_WINDOWS.bat)\n",
           flush=True)
     return server

@@ -327,7 +327,17 @@ def _open_native(target: str, o: dict) -> tuple[bool, str]:
     """Try to launch something on this OS. Returns (launched, detail)."""
     try:
         if IS_WIN:
-            code, out, err = util.run(["cmd", "/c", "start", "", target], timeout=6)
+            # os.startfile uses the real Windows shell association: works for
+            # URLs, folders, documents and executables with spaces in the path.
+            try:
+                os.startfile(target)  # type: ignore[attr-defined]
+                return True, "os.startfile"
+            except AttributeError:
+                pass
+            except Exception:
+                pass
+            code, out, err = util.run(
+                ["cmd", "/c", "start", "", target], timeout=6)
             return code == 0, err or "cmd start"
         if IS_MAC:
             code, out, err = util.run(["open", "-a", target], timeout=6)
@@ -412,7 +422,8 @@ def app_close(args: dict, o: dict) -> dict:
     key = util.normalize(target)
     prog = APP_ALIASES.get(key, (target, target, target))[0 if IS_WIN else 1 if IS_MAC else 2]
     if IS_WIN:
-        code, out, err = util.run(["taskkill", "/IM", f"{prog}.exe", "/F"], timeout=8)
+        image = prog if prog.lower().endswith(".exe") else prog + ".exe"
+        code, out, err = util.run(["taskkill", "/IM", image, "/F"], timeout=8)
     else:
         code, out, err = util.run(["pkill", "-f", prog], timeout=8) if util.which("pkill") else (127, "", "pkill missing")
     return _ok(f"Закрываю {target}." if code == 0 else f"Не нашёл запущенный процесс «{target}».",
@@ -453,7 +464,8 @@ def file_search(args: dict, o: dict) -> dict:
     needle = util.normalize(query)
     found, scanned = [], 0
     skip = {".git", "node_modules", "__pycache__", ".cache", ".venv", "venv", ".local",
-            "proc", "sys", "dev", ".mozilla", ".config", "site-packages"}
+            "proc", "sys", "dev", ".mozilla", ".config", "site-packages",
+            "AppData", "Windows", "Program Files", "$Recycle.Bin"}
     try:
         for dirpath, dirnames, filenames in os.walk(start, followlinks=False):
             dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")]
@@ -532,8 +544,10 @@ def clipboard_set(args: dict, o: dict) -> dict:
     text = str(args.get("text") or "")
     code, out, err = 127, "", ""
     if IS_WIN:
+        # $input is unreliable with powershell -Command; read stdin explicitly.
         code, out, err = util.run(
-            ["powershell", "-NoProfile", "-Command", "Set-Clipboard -Value $input"],
+            ["powershell", "-NoProfile", "-Command",
+             "[Console]::In.ReadToEnd() | Set-Clipboard"],
             input_text=text, timeout=6)
     elif IS_MAC:
         code, out, err = util.run(["pbcopy"], input_text=text, timeout=6)
@@ -713,7 +727,6 @@ def execute(name: str, args: dict, opts: dict | None = None) -> dict:
         return res
     except Exception as exc:
         return _fail(f"Ошибка при выполнении «{name}»: {exc}")
-
 # =====================================================================
 #  Клиентская часть: регистрация на сервере, получение задач, отчёты
 # =====================================================================

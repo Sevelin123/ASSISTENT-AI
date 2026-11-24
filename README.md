@@ -24,6 +24,31 @@ python jarvis.py
 
 ---
 
+## 🪟 Windows: автоматическая установка (рекомендуется)
+
+**Один двойной клик — и всё готово.** Установщик сам поставит Python (если его нет), развернёт приложение, поднимет сервер HUD и агент управления ПК, добавит автозагрузку, ярлык на рабочий стол, иконку в системном трее и откроет браузер.
+
+1. В HUD: **Настройки → WINDOWS · АВТОМАТИЧЕСКАЯ УСТАНОВКА → «Скачать установщик Windows (.zip)»**  
+   (или напрямую `http://localhost:8080/download/JARVIS-Windows.zip`)
+2. Распакуйте архив.
+3. Двойной клик по **`INSTALL_WINDOWS.bat`**.
+4. Разрешите микрофон в Chrome/Edge и скажите **«Джарвис, который час?»**
+
+Альтернативы: запустить `INSTALL_WINDOWS.bat` из клона репозитория, либо скачать **только один BAT** (`/download/INSTALL_WINDOWS.bat`) — он сам загрузит исходники с GitHub.
+
+```bat
+INSTALL_WINDOWS.bat -Port 9000        :: другой порт
+INSTALL_WINDOWS.bat -Lan              :: доступ с других устройств сети + firewall
+INSTALL_WINDOWS.bat -NoAutostart      :: без автозагрузки
+INSTALL_WINDOWS.bat -Update           :: обновить, сохранив заметки и настройки
+UNINSTALL_WINDOWS.bat                 :: удалить сервисы и ярлыки (данные сохранятся)
+UNINSTALL_WINDOWS.bat -Purge          :: удалить всё вместе с данными
+```
+
+Установщик ставит приложение в `%LOCALAPPDATA%\JARVIS`, пишет лог `install.log`, логи сервисов в `logs\`, слушает только `127.0.0.1` по умолчанию и **не включает** опасные команды. Полная документация — **[windows/README.md](windows/README.md)**.
+
+---
+
 ## Что умеет
 
 | Категория | Примеры фраз |
@@ -162,6 +187,12 @@ JARVIS_BASE_URL=http://localhost:11434/v1 JARVIS_MODEL=llama3.1 python jarvis.py
 ```
 jarvis.py                  точка входа: server / cli / agent / selftest
 jarvis_agent.py            ОДИН ФАЙЛ для вашего ПК (stdlib only, Windows/macOS/Linux)
+INSTALL_WINDOWS.bat        автоматический установщик Windows (двойной клик)
+UNINSTALL_WINDOWS.bat      удаление сервисов, ярлыков и автозагрузки
+windows/
+  setup.ps1                установка / обновление / удаление (PowerShell)
+  tray.ps1                 иконка в системном трее с меню управления
+  README.md                документация по Windows-установке
 jarvis/
   config.py                конфиг: env + jarvis.config.json
   util.py                  утилиты, безопасный калькулятор (AST, не eval)
@@ -200,6 +231,8 @@ start.sh / start.bat       быстрый запуск
 | `GET` | `/api/events` | SSE: `speak`, `agent`, `config`, `action`, `chat` |
 | `POST` | `/api/agent/register` · `/poll` · `/result` · `/heartbeat` | протокол агента |
 | `GET` | `/download/jarvis_agent.py` | скачать агент одним файлом |
+| `GET` | `/download/JARVIS-Windows.zip` | полный установщик Windows (генерируется на лету) |
+| `GET` | `/download/INSTALL_WINDOWS.bat` · `/download/windows/setup.ps1` | отдельные файлы установщика |
 
 Пример:
 
