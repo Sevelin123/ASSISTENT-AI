@@ -270,17 +270,22 @@ function Get-SourceFiles {
     Write-Log 'Исходники рядом не найдены — загружаю репозиторий с GitHub...' 'WARN'
     $branch  = $Branch
     $repoSha = ''
-    if (-not $branch) {
-        try {
-            $branches = Invoke-RestMethod -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/branches?per_page=100" `
-                        -TimeoutSec 20 -Headers @{ 'User-Agent' = 'JARVIS-Setup' }
+    $defaultBranch = 'arena/57b8f59e-assistent-ai'
+    if (-not $branch) { $branch = $defaultBranch }
+    try {
+        $branches = Invoke-RestMethod -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/branches?per_page=100" `
+                    -TimeoutSec 20 -Headers @{ 'User-Agent' = 'JARVIS-Setup' }
+        $chosen = $branches | Where-Object { $_.name -eq $branch } | Select-Object -First 1
+        if ($chosen) { $repoSha = $chosen.commit.sha }
+        elseif (-not $Branch) {
+            # Fall back to the newest arena branch if the session branch was renamed.
             $arena = $branches | Where-Object { $_.name -like 'arena/*' } | Select-Object -First 1
             if ($arena) { $branch = $arena.name; $repoSha = $arena.commit.sha }
-            else { $branch = 'main' }
-        } catch { $branch = 'main' }
-    }
-    # A commit SHA works even for branch names containing '/'.
-    if (-not $repoSha) {
+        }
+    } catch { }
+    # A commit SHA works even for branch names containing '/'; if the API is
+    # unavailable, codeload's refs/heads/<branch> URL still works with slashes.
+    if (-not $repoSha -and $branch -notmatch '/') {
         try {
             $repoSha = (Invoke-RestMethod -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/branches/$branch" `
                         -TimeoutSec 15 -Headers @{ 'User-Agent' = 'JARVIS-Setup' }).commit.sha

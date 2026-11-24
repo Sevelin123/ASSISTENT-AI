@@ -28,14 +28,19 @@ python jarvis.py
 
 **Один двойной клик — и всё готово.** Установщик сам поставит Python (если его нет), развернёт приложение, поднимет сервер HUD и агент управления ПК, добавит автозагрузку, ярлык на рабочий стол, иконку в системном трее и откроет браузер.
 
-1. Открой на своём ПК страницу **`/install`** (кнопка **«↓ НА МОЙ ПК»** в шапке HUD) — там большая кнопка скачивания и вся инструкция.  
-   Прямая ссылка: `http://<адрес-сервера>/download/JARVIS-Windows.zip`, либо в HUD **Настройки → WINDOWS · АВТОМАТИЧЕСКАЯ УСТАНОВКА**.  
-   Если сервер-превью уже выключен, скачай **[архив с GitHub](https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai)** — он всегда содержит актуальный установщик.
-2. Распакуйте архив.
-3. Двойной клик по **`INSTALL_WINDOWS.bat`**.
-4. Разрешите микрофон в Chrome/Edge и скажите **«Джарвис, который час?»**
+**Главная, постоянно работающая ссылка — сразу на архив (облако не нужно):**
 
-Альтернативы: запустить `INSTALL_WINDOWS.bat` из клона репозитория, либо скачать **только один BAT** (`/download/INSTALL_WINDOWS.bat`) — он сам загрузит исходники с GitHub.
+👉 **[https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai](https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai)**
+
+1. Скачай архив по ссылке выше и распакуй его (правый клик → «Извлечь все…»).
+2. Двойной клик по **`INSTALL_WINDOWS.bat`**.
+3. Разрешите микрофон в Chrome/Edge и скажите **«Джарвис, который час?»**
+
+Внутри архива лежит **[`START-HERE.html`](START-HERE.html)** — автономная страница-инструкция: открывается двойным кликом с диска, **не требует сервера, предпросмотра или интернета** (кроме самой кнопки скачивания). Если HUD запущен, та же страница доступна по `/start-here`, а полная веб-инструкция — по `/install`.
+
+> **Видите `502 BAD GATEWAY / SANDBOX NOT FOUND`?** Это всего лишь выключенная временная облачная песочница, а не поломка приложения. Не чините старую ссылку `https://8080-….e2b.app` — используйте архив с GitHub и `START-HERE.html`. После установки открывайте только **свой** `http://127.0.0.1:8080`.
+
+Альтернативы: запустить `INSTALL_WINDOWS.bat` из клона репозитория, либо скачать **только один BAT** (в запущенном HUD: `/download/INSTALL_WINDOWS.bat`) — он сам загрузит исходники с GitHub.
 
 ```bat
 INSTALL_WINDOWS.bat -Port 9000        :: другой порт
@@ -215,6 +220,7 @@ JARVIS_BASE_URL=http://localhost:11434/v1 JARVIS_MODEL=llama3.1 python jarvis.py
 ```
 jarvis.py                  точка входа: server / cli / agent / selftest
 jarvis_agent.py            ОДИН ФАЙЛ для вашего ПК (stdlib only, Windows/macOS/Linux)
+START-HERE.html            автономная инструкция из ZIP (открывается без сервера)
 INSTALL_WINDOWS.bat        автоматический установщик Windows (двойной клик)
 UNINSTALL_WINDOWS.bat      удаление сервисов, ярлыков и автозагрузки
 windows/
@@ -262,6 +268,7 @@ start.sh / start.bat       быстрый запуск
 | `GET` | `/download/JARVIS-Windows.zip` | полный установщик Windows (генерируется на лету) |
 | `GET` | `/download/INSTALL_WINDOWS.bat` · `/download/windows/setup.ps1` | отдельные файлы установщика |
 | `GET` | `/install` | страница «Установить на мой ПК» с прямыми ссылками и командами |
+| `GET` | `/start-here` · `/START-HERE.html` | автономная offline-инструкция из архива (работает и без сервера) |
 
 Пример:
 

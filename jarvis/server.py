@@ -45,6 +45,9 @@ BUNDLE_SKIP_FILES = {
 WINDOWS_README = """J.A.R.V.I.S. — автоматическая установка на Windows
 =====================================================
 
+0. Если облачный предпросмотр недоступен (502 BAD GATEWAY / SANDBOX NOT FOUND) —
+   это НЕ ошибка установщика. Откройте START-HERE.html из этого архива:
+   инструкция работает без сервера и без временных ссылок *.e2b.app.
 1. РАСПАКУЙТЕ этот архив в любую папку (Правый клик -> Извлечь все...).
 2. ДВОЙНОЙ КЛИК по INSTALL_WINDOWS.bat
 3. Всё остальное установщик сделает сам:
@@ -220,6 +223,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(WEB_DIR / "index.html")
         if path in ("/install", "/install.html"):
             return self._file(WEB_DIR / "install.html")
+        if path in ("/start", "/start-here", "/offline", "/START-HERE.html"):
+            return self._file(BASE_DIR / "START-HERE.html")
         if path in ("/styles.css", "/app.js", "/favicon.svg", "/manifest.json"):
             return self._file(WEB_DIR / path.lstrip("/"))
         if path in ("/jarvis_agent.py", "/download/jarvis_agent.py"):

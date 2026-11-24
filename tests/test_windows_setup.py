@@ -16,6 +16,7 @@ class TestInstallerFiles(unittest.TestCase):
         for rel in (
             "INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat",
             "windows/setup.ps1", "windows/tray.ps1", "windows/README.md",
+            "START-HERE.html", "web/install.html",
         ):
             with self.subTest(file=rel):
                 self.assertTrue((ROOT / rel).is_file(), f"missing {rel}")
@@ -43,7 +44,9 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("-ExecutionPolicy Bypass", bat)
         self.assertIn("setup.ps1", bat)
         self.assertIn("codeload.github.com", bat)  # standalone fallback
-        self.assertIn("$sha", bat)                 # commit SHA handles branch names with '/'
+        self.assertIn("arena/57b8f59e-assistent-ai", bat)
+        self.assertIn("$a.commit.sha", bat)        # commit SHA handles branch names with '/'
+        self.assertNotIn("$b='main'", bat, "main is the stale base commit, not the app")
         uninstall = (ROOT / "UNINSTALL_WINDOWS.bat").read_text(encoding="utf-8")
         self.assertIn("-Uninstall", uninstall)
 
@@ -55,6 +58,7 @@ class TestInstallerFiles(unittest.TestCase):
             "Startup", "/api/health", "/api/agent/status", "jarvis.config.json",
             "ConvertTo-Crlf", "New-JarvisIcon", "-Uninstall", "-NoAutostart", "-Lan",
             "New-NetFirewallRule", "ru-RU", "Get-ChildItem $key", "repoSha",
+            "defaultBranch = 'arena/57b8f59e-assistent-ai'", "refs/heads",
             "Speech_OneCore", "VOICE-HELP.txt", "ms-settings:speech",
             "DISM /Online /Cleanup-Image /RestoreHealth", "Home Single Language",
         ]
@@ -77,6 +81,30 @@ class TestInstallerFiles(unittest.TestCase):
             self.assertNotIn("New-Object System.Windows.Forms.Tool", text)
 
 
+    def test_offline_start_here_is_self_contained(self):
+        """The page inside the ZIP must work via file:// with no server."""
+        page = (ROOT / "START-HERE.html").read_text(encoding="utf-8")
+        for needle in ("502 BAD GATEWAY", "SANDBOX NOT FOUND",
+                       "codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai",
+                       "INSTALL_WINDOWS.bat", "http://127.0.0.1:8080",
+                       "VOICE-HELP.txt", "START-HERE.html", "windows/README.md"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, page)
+        self.assertNotIn('<link rel="stylesheet"', page)
+        self.assertNotIn("<script", page)
+        # Generic "https://8080-….e2b.app" text is OK; a real sandbox URL is not.
+        import re
+        self.assertIsNone(re.search(r"https://8080-[a-z0-9]{10,}", page),
+                          "no hardcoded dead sandbox URL")
+        self.assertNotIn("ij8lmut", page, "no stale sandbox id")
+
+    def test_readme_has_permanent_link_and_502_help(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai", readme)
+        self.assertIn("START-HERE.html", readme)
+        self.assertIn("502 BAD GATEWAY", readme)
+
+
 class TestWindowsBundle(unittest.TestCase):
     def setUp(self):
         from jarvis.config import DATA_DIR
@@ -97,6 +125,7 @@ class TestWindowsBundle(unittest.TestCase):
             names = z.namelist()
             for needed in (
                 "JARVIS-Windows/README-WINDOWS.txt",
+                "JARVIS-Windows/START-HERE.html",
                 "JARVIS-Windows/INSTALL_WINDOWS.bat",
                 "JARVIS-Windows/UNINSTALL_WINDOWS.bat",
                 "JARVIS-Windows/windows/setup.ps1",
@@ -118,6 +147,8 @@ class TestWindowsBundle(unittest.TestCase):
                                      f"bundle leaks {forbidden}")
             readme = z.read("JARVIS-Windows/README-WINDOWS.txt").decode("utf-8")
             self.assertIn("INSTALL_WINDOWS.bat", readme)
+            self.assertIn("START-HERE.html", readme)
+            self.assertIn("502 BAD GATEWAY", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):
@@ -132,7 +163,8 @@ class TestWindowsBundle(unittest.TestCase):
         src = (ROOT / "jarvis/server.py").read_text(encoding="utf-8")
         for route in ("/download/JARVIS-Windows.zip", "/download/INSTALL_WINDOWS.bat",
                       "/download/windows/", "/download/UNINSTALL_WINDOWS.bat",
-                      '"/install"', "/windows/README.md"):
+                      '"/install"', "/windows/README.md",
+                      "/start-here", "/START-HERE.html"):
             self.assertIn(route, src)
 
     def test_hud_links_to_install_page(self):
@@ -140,6 +172,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn('href="/install"', html)
         self.assertIn("НА МОЙ ПК", html)
         self.assertIn("boot-install", html)
+        self.assertIn('href="/START-HERE.html"', html)
+        self.assertIn("OFFLINE-ИНСТРУКЦИЯ", html)
 
     def test_install_page_has_permanent_github_link(self):
         page = (ROOT / "web/install.html").read_text(encoding="utf-8")
@@ -147,6 +181,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("refs/heads/arena/57b8f59e-assistent-ai", page)
         self.assertNotIn("/zip/6268dbe", page, "stale pinned SHA")
         self.assertIn("data-href-origin", page)  # works on cloud AND local installs
+        self.assertIn("502 BAD GATEWAY", page)
+        self.assertIn("START-HERE.html", page)
 
     def test_russian_voice_troubleshooting_everywhere(self):
         """The 'voice won't install' answer must exist in HUD, FAQ, README and installer."""

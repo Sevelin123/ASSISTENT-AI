@@ -105,9 +105,24 @@ class TestHTTPContract(unittest.TestCase):
                 self.assertIn("text/html", headers.get("Content-Type", ""))
                 for needle in (b"INSTALL_WINDOWS.bat", b"JARVIS-Windows.zip",
                                b"jarvis_agent.py", b"127.0.0.1:8080",
-                               b"Home Single Language", b"ms-settings:speech"):
+                               b"Home Single Language", b"ms-settings:speech",
+                               b"502 BAD GATEWAY", b"START-HERE.html"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b"")
+
+    def test_offline_start_here_page(self):
+        for path in ("/start-here", "/START-HERE.html", "/start", "/offline"):
+            with self.subTest(path=path):
+                status, headers, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                self.assertIn("text/html", headers.get("Content-Type", ""))
+                for needle in (b"502 BAD GATEWAY", b"INSTALL_WINDOWS.bat",
+                               b"codeload.github.com", b"START-HERE.html",
+                               b"127.0.0.1:8080"):
+                    self.assertIn(needle, body)
+        status, _, body = self.request("HEAD", "/start-here")
         self.assertEqual(status, 200)
         self.assertEqual(body, b"")
 
@@ -115,6 +130,7 @@ class TestHTTPContract(unittest.TestCase):
         status, _, body = self.request("GET", "/windows/README.md")
         self.assertEqual(status, 200)
         self.assertIn(b"INSTALL_WINDOWS.bat", body)
+        self.assertIn(b"START-HERE.html", body)
 
     def test_options_preflight(self):
         status, headers, _ = self.request("OPTIONS", "/api/chat")
