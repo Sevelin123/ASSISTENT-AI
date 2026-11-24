@@ -5,8 +5,9 @@
 ОДИН ФАЙЛ, ТОЛЬКО СТАНДАРТНАЯ БИБЛИОТЕКА PYTHON 3.9+.
 
 Запустите этот скрипт на своём компьютере, и голосовой ассистент в браузере
-получит возможность выполнять реальные действия: открывать программы и сайты,
-искать и читать файлы, менять громкость, делать скриншоты, копировать в буфер.
+получит возможность выполнять реальные действия: открывать приложения по имени,
+«Этот компьютер», файлы, папки и сайты, искать и читать файлы, менять громкость,
+делать скриншоты, копировать в буфер.
 
     python jarvis_agent.py --server https://ваш-адрес.e2b.app
 
@@ -118,30 +119,39 @@ IS_LINUX = not (IS_WIN or IS_MAC)
 
 APP_ALIASES: dict[str, tuple[str, str, str]] = {
     # alias: (Windows command, macOS app name, Linux binary)
-    "браузер": ("msedge", "Safari", "firefox"),
-    "browser": ("msedge", "Safari", "firefox"),
-    "chrome": ("chrome", "Google Chrome", "google-chrome"),
-    "гугл": ("chrome", "Google Chrome", "google-chrome"),
-    "firefox": ("firefox", "Firefox", "firefox"),
-    "проводник": ("explorer", "Finder", "xdg-open"),
-    "файлы": ("explorer", "Finder", "xdg-open"),
-    "explorer": ("explorer", "Finder", "xdg-open"),
-    "finder": ("explorer", "Finder", "xdg-open"),
-    "блокнот": ("notepad", "TextEdit", "gedit"),
-    "notepad": ("notepad", "TextEdit", "gedit"),
-    "калькулятор": ("calc", "Calculator", "gnome-calculator"),
-    "calculator": ("calc", "Calculator", "gnome-calculator"),
-    "терминал": ("cmd", "Terminal", "x-terminal-emulator"),
-    "terminal": ("cmd", "Terminal", "x-terminal-emulator"),
-    "код": ("code", "Visual Studio Code", "code"),
-    "vscode": ("code", "Visual Studio Code", "code"),
-    "word": ("winword", "Microsoft Word", "libreoffice"),
-    "excel": ("excel", "Microsoft Excel", "libreoffice"),
-    "spotify": ("spotify", "Spotify", "spotify"),
-    "музыка": ("spotify", "Spotify", "spotify"),
-    "telegram": ("telegram", "Telegram", "telegram-desktop"),
-    "discord": ("discord", "Discord", "discord"),
+    "браузер": ("msedge.exe", "Safari", "firefox"),
+    "browser": ("msedge.exe", "Safari", "firefox"),
+    "chrome": ("chrome.exe", "Google Chrome", "google-chrome"),
+    "гугл": ("chrome.exe", "Google Chrome", "google-chrome"),
+    "firefox": ("firefox.exe", "Firefox", "firefox"),
+    "проводник": ("explorer.exe", "Finder", "xdg-open"),
+    "файлы": ("explorer.exe", "Finder", "xdg-open"),
+    "explorer": ("explorer.exe", "Finder", "xdg-open"),
+    "finder": ("explorer.exe", "Finder", "xdg-open"),
+    "блокнот": ("notepad.exe", "TextEdit", "gedit"),
+    "notepad": ("notepad.exe", "TextEdit", "gedit"),
+    "калькулятор": ("calc.exe", "Calculator", "gnome-calculator"),
+    "calculator": ("calc.exe", "Calculator", "gnome-calculator"),
+    "терминал": ("cmd.exe", "Terminal", "x-terminal-emulator"),
+    "terminal": ("cmd.exe", "Terminal", "x-terminal-emulator"),
+    "код": ("Code.exe", "Visual Studio Code", "code"),
+    "vscode": ("Code.exe", "Visual Studio Code", "code"),
+    "word": ("WINWORD.EXE", "Microsoft Word", "libreoffice"),
+    "excel": ("EXCEL.EXE", "Microsoft Excel", "libreoffice"),
+    "spotify": ("Spotify.exe", "Spotify", "spotify"),
+    "музыка": ("Spotify.exe", "Spotify", "spotify"),
+    "telegram": ("Telegram.exe", "Telegram", "telegram-desktop"),
+    "discord": ("Discord.exe", "Discord", "discord"),
     "камера": ("microsoft.windows.camera:", "Photo Booth", "cheese"),
+    "steam": ("steam.exe", "Steam", "steam"),
+    "стим": ("steam.exe", "Steam", "steam"),
+    "epic": ("EpicGamesLauncher.exe", "Epic Games Launcher", "epic-games-launcher"),
+    "эпик": ("EpicGamesLauncher.exe", "Epic Games Launcher", "epic-games-launcher"),
+    "epic games": ("EpicGamesLauncher.exe", "Epic Games Launcher", "epic-games-launcher"),
+    "edge": ("msedge.exe", "Microsoft Edge", "microsoft-edge"),
+    "микрософт эдж": ("msedge.exe", "Microsoft Edge", "microsoft-edge"),
+    "vk": ("VK.exe", "VK", "vk"),
+    "вконтакте": ("VK.exe", "VK", "vk"),
 }
 
 FOLDER_ALIASES = {
@@ -323,23 +333,391 @@ def system_processes(args: dict, o: dict) -> dict:
 
 
 # ---------------------------------------------------------------- apps
+# Virtual Windows shell folders, URI schemes and installed-application lookup.
+SPECIAL_SHELL_FOLDERS = {
+    "компьютер": ("shell:MyComputerFolder", "Этот компьютер"),
+    "мой компьютер": ("shell:MyComputerFolder", "Этот компьютер"),
+    "этот компьютер": ("shell:MyComputerFolder", "Этот компьютер"),
+    "мой пк": ("shell:MyComputerFolder", "Этот компьютер"),
+    "этот пк": ("shell:MyComputerFolder", "Этот компьютер"),
+    "пк": ("shell:MyComputerFolder", "Этот компьютер"),
+    "computer": ("shell:MyComputerFolder", "Этот компьютер"),
+    "my computer": ("shell:MyComputerFolder", "Этот компьютер"),
+    "this pc": ("shell:MyComputerFolder", "Этот компьютер"),
+    "pc": ("shell:MyComputerFolder", "Этот компьютер"),
+    "диски": ("shell:MyComputerFolder", "Этот компьютер"),
+    "drives": ("shell:MyComputerFolder", "Этот компьютер"),
+    "проводник": ("shell:MyComputerFolder", "Этот компьютер"),
+    "панель управления": ("shell:ControlPanelFolder", "Панель управления"),
+    "control panel": ("shell:ControlPanelFolder", "Панель управления"),
+    "корзина": ("shell:RecycleBinFolder", "Корзина"),
+    "recycle bin": ("shell:RecycleBinFolder", "Корзина"),
+    "сеть": ("shell:NetworkPlacesFolder", "Сеть"),
+    "network": ("shell:NetworkPlacesFolder", "Сеть"),
+}
+
+# Friendly names for apps whose real Start-menu/AppID name differs from the
+# spoken alias. Used only to search installed applications on Windows.
+APP_QUERY_EXTRA = {
+    "браузер": "Microsoft Edge",
+    "browser": "Microsoft Edge",
+    "edge": "Microsoft Edge",
+    "микрософт эдж": "Microsoft Edge",
+    "steam": "Steam",
+    "стим": "Steam",
+    "код": "Visual Studio Code",
+    "vscode": "Visual Studio Code",
+    "word": "Microsoft Word",
+    "excel": "Microsoft Excel",
+    "epic": "Epic Games Launcher",
+    "эпик": "Epic Games Launcher",
+    "epic games": "Epic Games Launcher",
+}
+
+# Last-resort literal paths for popular apps that are not on PATH and may not
+# be exposed through Get-StartApps on older Windows builds.
+COMMON_WIN_APP_PATHS: dict[str, tuple[str, ...]] = {
+    "steam": (
+        r"%ProgramFiles(x86)%\Steam\steam.exe",
+        r"%ProgramFiles%\Steam\steam.exe",
+        r"%LOCALAPPDATA%\Steam\steam.exe",
+    ),
+    "стим": (
+        r"%ProgramFiles(x86)%\Steam\steam.exe",
+        r"%ProgramFiles%\Steam\steam.exe",
+        r"%LOCALAPPDATA%\Steam\steam.exe",
+    ),
+    "chrome": (
+        r"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
+        r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
+        r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe",
+    ),
+    "msedge": (
+        r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe",
+        r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe",
+        r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe",
+    ),
+    "code": (
+        r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe",
+        r"%ProgramFiles%\Microsoft VS Code\Code.exe",
+    ),
+    "vscode": (
+        r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe",
+        r"%ProgramFiles%\Microsoft VS Code\Code.exe",
+    ),
+    "telegram": (
+        r"%APPDATA%\Telegram Desktop\Telegram.exe",
+        r"%LOCALAPPDATA%\Telegram Desktop\Telegram.exe",
+    ),
+    "discord": (
+        r"%LOCALAPPDATA%\Discord\app-*\Discord.exe",
+        r"%APPDATA%\Discord\Discord.exe",
+    ),
+    "epic": (
+        r"%ProgramFiles(x86)%\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
+        r"%ProgramFiles%\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
+    ),
+    "эпик": (
+        r"%ProgramFiles(x86)%\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
+        r"%ProgramFiles%\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
+    ),
+    "epic games": (
+        r"%ProgramFiles(x86)%\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
+        r"%ProgramFiles%\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
+    ),
+}
+
+# PowerShell asks Windows itself where the app is: Start-menu AppIDs,
+# .lnk shortcuts, App Paths, uninstall DisplayIcon/InstallLocation and PATH.
+# The spoken query arrives via an environment variable, so quotes/Cyrillic
+# cannot break the command line. JSON is the only stdout we parse.
+POWERSHELL_FIND_APP = r"""
+$ErrorActionPreference = 'SilentlyContinue'
+$ProgressPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$q = $env:JARVIS_APP_QUERY
+if (-not $q) { '{}'; exit 0 }
+$escaped = [System.Management.Automation.WildcardPattern]::Escape($q)
+$needle = '*' + $escaped + '*'
+$global:found = $null
+function Add-Candidate {
+    param([string]$kind, [string]$value, [string]$display)
+    if ($value -and -not $global:found) {
+        $global:found = [pscustomobject]@{ kind = $kind; value = $value; display = $display }
+    }
+}
+if (Get-Command Get-StartApps -ErrorAction SilentlyContinue) {
+    $a = Get-StartApps | Where-Object { $_.Name -like $needle } | Select-Object -First 1
+    if ($a) { Add-Candidate 'appid' $a.AppID $a.Name }
+}
+if (-not $global:found) {
+    $roots = @(
+        (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'),
+        (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs'),
+        [Environment]::GetFolderPath('Desktop')
+    )
+    foreach ($root in $roots) {
+        if (-not (Test-Path $root)) { continue }
+        $lnk = Get-ChildItem -Path $root -Recurse -Filter '*.lnk' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.BaseName -like $needle } | Select-Object -First 1
+        if ($lnk) { Add-Candidate 'path' $lnk.FullName $lnk.BaseName; break }
+    }
+}
+if (-not $global:found) {
+    $appPathPatterns = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\*',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\*'
+    )
+    foreach ($pattern in $appPathPatterns) {
+        $k = Get-Item $pattern -ErrorAction SilentlyContinue |
+            Where-Object { $_.PSChildName -like $needle } | Select-Object -First 1
+        if ($k) {
+            $v = $k.GetValue('')
+            if (-not $v) { $v = $k.PSChildName }
+            Add-Candidate 'path' ([string]$v) $k.PSChildName
+            break
+        }
+    }
+}
+if (-not $global:found) {
+    $uninstallPatterns = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    foreach ($pattern in $uninstallPatterns) {
+        $item = Get-ItemProperty $pattern -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -like $needle } | Select-Object -First 1
+        if ($item) {
+            $icon = ([string]$item.DisplayIcon).Split(',')[0].Trim('"')
+            if ($icon -and (Test-Path $icon)) {
+                Add-Candidate 'path' $icon $item.DisplayName
+                break
+            }
+            $loc = [string]$item.InstallLocation
+            if ($loc -and (Test-Path $loc)) {
+                $exe = Get-ChildItem -Path $loc -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.BaseName -like $needle -or $_.Name -like $needle } |
+                    Select-Object -First 1
+                if ($exe) { Add-Candidate 'path' $exe.FullName $item.DisplayName; break }
+            }
+        }
+    }
+}
+if (-not $global:found) {
+    $cmd = Get-Command -Name $q -CommandType Application -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($cmd) { Add-Candidate 'path' $cmd.Source $q }
+}
+if ($global:found) { $global:found | ConvertTo-Json -Compress } else { '{}' }
+"""
+
+_URI_OR_SHELL_RE = re.compile(
+    r"^(?:[A-Za-z][\w+.-]*://|[A-Za-z][\w+.-]*:|shell:|::\{)", re.I)
+_DRIVE_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
+_LAUNCH_PREFIX_RE = re.compile(
+    r"^(?:приложение|программу|программа|программы|игру|файл|папку|папка)\s+", re.I)
+
+
+def _strip_launch_prefix(text: str) -> str:
+    return _LAUNCH_PREFIX_RE.sub("", str(text or "").strip()).strip()
+
+
+def _is_uri_or_shell(value: str) -> bool:
+    s = str(value or "").strip()
+    if _DRIVE_PATH_RE.match(s):
+        return False
+    return bool(_URI_OR_SHELL_RE.match(s))
+
+
+def _can_shell_open(target: str) -> bool:
+    """Never hand a bare program name to cmd/start or os.startfile.
+
+    That is exactly what produced Windows' "Не удается найти Steam" dialog.
+    """
+    s = str(target or "").strip()
+    if _is_uri_or_shell(s):
+        return True
+    if _DRIVE_PATH_RE.match(s) or os.path.isabs(s):
+        return True
+    try:
+        return Path(s).expanduser().exists()
+    except Exception:
+        return False
+
+
+def _explorer_path() -> str:
+    found = util.which("explorer.exe")
+    if found:
+        return str(found)
+    return str(Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe")
+
+
+def _creation_flags() -> int:
+    return int(getattr(subprocess, "CREATE_NO_WINDOW", 0) or 0)
+
+
+def _open_shell_location(location: str, label: str, o: dict) -> dict:
+    """Open a virtual Explorer folder such as 'Этот компьютер'."""
+    if IS_WIN:
+        try:
+            proc = subprocess.Popen(
+                [_explorer_path(), location],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                creationflags=_creation_flags(),
+            )
+            return _ok(f"Открываю «{label}».", launched=True, kind="shell",
+                       shell=location, pid=proc.pid)
+        except Exception as exc:
+            launched, detail = _open_native(location, o)
+            return _ok(f"Открываю «{label}».", launched=launched, kind="shell",
+                       shell=location, detail=detail or str(exc))
+    launched, detail = _open_native(str(Path.home()), o)
+    return _ok(f"Открываю домашнюю папку — аналог «{label}» на этой системе.",
+               launched=launched, kind="shell", shell=location, detail=detail)
+
+
+def _powershell_find_app(query: str) -> dict | None:
+    """Ask Windows for an AppID/shortcut/executable matching the spoken name."""
+    if not IS_WIN or not query:
+        return None
+    exe = util.which("powershell.exe")
+    if not exe:
+        exe = str(Path(os.environ.get("WINDIR", r"C:\Windows")) /
+                  "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe")
+    env = dict(os.environ)
+    env["JARVIS_APP_QUERY"] = query
+    try:
+        p = subprocess.run(
+            [str(exe), "-NoProfile", "-NonInteractive", "-Command", POWERSHELL_FIND_APP],
+            env=env, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=10, creationflags=_creation_flags(),
+        )
+        out = (p.stdout or "").strip()
+        start, end = out.find("{"), out.rfind("}")
+        if start < 0 or end < start:
+            return None
+        data = json.loads(out[start:end + 1])
+        if isinstance(data, dict) and data.get("value") and data.get("kind") in ("appid", "path"):
+            return data
+    except Exception:
+        return None
+    return None
+
+
+def _common_windows_app_paths(query: str) -> list[str]:
+    key = util.normalize(query)
+    if key.endswith(".exe"):
+        key = key[:-4]
+    out: list[str] = []
+    for raw in COMMON_WIN_APP_PATHS.get(key, ()):
+        expanded = os.path.expandvars(raw)
+        if "*" in expanded:
+            import glob
+            out.extend(glob.glob(expanded))
+        else:
+            p = Path(expanded).expanduser()
+            if p.exists():
+                out.append(str(p))
+    return out
+
+
+def _query_variants(*values: str | None) -> list[str]:
+    seen: list[str] = []
+    for value in values:
+        if not value:
+            continue
+        text = _strip_launch_prefix(str(value)).strip()
+        if not text:
+            continue
+        candidates = [text]
+        if text.lower().endswith(".exe"):
+            candidates.append(text[:-4])
+        extra = APP_QUERY_EXTRA.get(util.normalize(text))
+        if extra:
+            candidates.append(extra)
+        for candidate in candidates:
+            candidate = candidate.strip()
+            if candidate and candidate not in seen:
+                seen.append(candidate)
+    return seen
+
+
+def _resolve_windows_app(target: str, prog: str | None = None,
+                         original: str | None = None) -> dict | None:
+    """Find a real app by friendly name. Never uses a guessed bare command."""
+    if not IS_WIN:
+        return None
+    queries = _query_variants(original, target, prog)
+    for query in queries:
+        candidate = _powershell_find_app(query)
+        if candidate:
+            return candidate
+    for query in queries:
+        for path in _common_windows_app_paths(query):
+            return {"kind": "path", "value": path, "display": Path(path).stem}
+    return None
+
+
+def _open_uri(value: str, o: dict) -> tuple[bool, str]:
+    startfile = getattr(os, "startfile", None)
+    if IS_WIN and startfile:
+        try:
+            startfile(value)
+            return True, "os.startfile"
+        except Exception as exc:
+            return False, str(exc)
+    return _open_native(value, o)
+
+
+def _launch_windows_candidate(candidate: dict, o: dict) -> tuple[bool, str]:
+    kind = str(candidate.get("kind") or "")
+    value = str(candidate.get("value") or "").strip()
+    if not value:
+        return False, "пустой результат поиска"
+    if kind == "appid":
+        # Windows launches Start-menu/AppID apps through shell:AppsFolder.
+        result = _open_shell_location("shell:AppsFolder\\" + value,
+                                      str(candidate.get("display") or value), o)
+        return bool(result.get("launched")), "shell:AppsFolder"
+    if _is_uri_or_shell(value) or value.lower().endswith((".lnk", ".url")):
+        return _open_uri(value, o)
+    expanded = os.path.expandvars(value)
+    p = Path(expanded).expanduser()
+    if p.exists():
+        launched, detail = _open_native(str(p), o)
+        if launched:
+            return True, detail
+        try:
+            proc = subprocess.Popen(
+                [str(p)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                creationflags=_creation_flags(),
+            )
+            return True, f"pid {proc.pid}"
+        except Exception as exc:
+            return False, str(exc)
+    return False, f"путь не найден: {value}"
+
+
 def _open_native(target: str, o: dict) -> tuple[bool, str]:
-    """Try to launch something on this OS. Returns (launched, detail)."""
+    """Open an existing path/URL/shell location. Never a bare app name."""
     try:
         if IS_WIN:
-            # os.startfile uses the real Windows shell association: works for
-            # URLs, folders, documents and executables with spaces in the path.
-            try:
-                os.startfile(target)  # type: ignore[attr-defined]
-                return True, "os.startfile"
-            except AttributeError:
-                pass
-            except Exception:
-                pass
-            code, out, err = util.run(
-                ["cmd", "/c", "start", "", target], timeout=6)
-            return code == 0, err or "cmd start"
+            startfile = getattr(os, "startfile", None)
+            if startfile and _can_shell_open(target):
+                try:
+                    startfile(target)
+                    return True, "os.startfile"
+                except Exception:
+                    pass
+            if _can_shell_open(target):
+                code, out, err = util.run(["cmd", "/c", "start", "", target], timeout=6)
+                return code == 0, err or out or "cmd start"
+            return False, "голое имя приложения не отправляется в Windows Shell"
         if IS_MAC:
+            if not _can_shell_open(target):
+                return False, "голое имя приложения не отправляется в Finder"
             code, out, err = util.run(["open", "-a", target], timeout=6)
             if code == 0:
                 return True, "open -a"
@@ -350,7 +728,11 @@ def _open_native(target: str, o: dict) -> tuple[bool, str]:
                 code, out, err = util.run([binary, target], timeout=6)
                 if code == 0:
                     return True, binary
-        # Last resort: the binary itself.
+        if not _can_shell_open(target):
+            return False, "голое имя приложения не запускается напрямую"
+        candidate = Path(target).expanduser()
+        if not candidate.exists() or candidate.is_dir() or not os.access(str(candidate), os.X_OK):
+            return False, "нет системного открывателя (xdg-open/gio/kde-open) для этого файла/папки"
         p = subprocess.Popen([target], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True, f"pid {p.pid}"
     except Exception as exc:
@@ -358,13 +740,15 @@ def _open_native(target: str, o: dict) -> tuple[bool, str]:
 
 
 def app_open(args: dict, o: dict) -> dict:
-    target = str(args.get("target") or "").strip().strip('"').strip("'")
+    raw = str(args.get("target") or "").strip().strip('"').strip("'")
+    target = _strip_launch_prefix(raw)
     if not target:
         return _fail("Не понял, что именно открыть.")
     low = util.normalize(target)
 
     # Website / URL
-    if re.match(r"^(https?://|www\.)", target, re.I) or (re.match(r"^[\w.-]+\.[a-z]{2,}(/.*)?$", target, re.I) and " " not in target):
+    if re.match(r"^(https?://|www\.)", target, re.I) or (
+            re.match(r"^[\w.-]+\.[a-z]{2,}(/.*)?$", target, re.I) and " " not in target):
         url = target if target.startswith("http") else "https://" + target
         try:
             webbrowser.open(url, new=2)
@@ -372,47 +756,140 @@ def app_open(args: dict, o: dict) -> dict:
             pass
         return _ok(f"Открываю {url} в браузере.", url=url, kind="url")
 
+    # Virtual shell folders: «Этот компьютер», Корзина, Панель управления...
+    special = SPECIAL_SHELL_FOLDERS.get(low)
+    if special:
+        return _open_shell_location(special[0], special[1], o)
+
     # Known folder aliases
     if low in FOLDER_ALIASES:
         folder = Path.home() / FOLDER_ALIASES[low] if FOLDER_ALIASES[low] else Path.home()
         folder.mkdir(parents=True, exist_ok=True)
         launched, detail = _open_native(str(folder), o)
-        return _ok(f"Открываю папку {folder}.", path=str(folder), launched=launched, kind="folder")
+        return _ok(f"Открываю папку {folder}.", path=str(folder),
+                   launched=launched, detail=detail, kind="folder")
 
-    # Explicit path
+    # Explicit existing path: file, folder, shortcut or executable.
     p = Path(target).expanduser()
     if p.exists():
         launched, detail = _open_native(str(p.resolve()), o)
-        return _ok(f"Открываю {p.name}.", path=str(p.resolve()), launched=launched, kind="path")
+        return _ok(f"Открываю {p.name}.", path=str(p.resolve()),
+                   launched=launched, detail=detail, kind="path")
 
-    # Application aliases
+    # URI / protocol (steam://, ms-settings:, microsoft.windows.camera:, shell:...)
+    if _is_uri_or_shell(target):
+        launched, detail = _open_uri(target, o)
+        return _ok(f"Открываю «{target}».", target=target,
+                   launched=launched, detail=detail, kind="uri") if launched else _fail(
+                       f"Не удалось открыть «{target}»: {detail}")
+
     alias = APP_ALIASES.get(low)
-    if alias:
-        prog = alias[0] if IS_WIN else alias[1] if IS_MAC else alias[2]
-        if util.which(prog):
+    prog = alias[0] if IS_WIN else alias[1] if IS_MAC else alias[2] if alias else None
+
+    # Known alias: URI scheme, then PATH, then installed-app lookup.
+    if alias and prog:
+        if _is_uri_or_shell(prog):
+            launched, detail = _open_uri(prog, o)
+            return _ok(f"Запускаю {target} ({prog}).", program=prog,
+                       launched=launched, detail=detail, kind="app") if launched else _fail(
+                           f"Не удалось запустить {prog}: {detail}")
+        found = util.which(prog)
+        if found:
             try:
-                subprocess.Popen([prog], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                return _ok(f"Запускаю {target}.", program=prog, kind="app")
+                proc = subprocess.Popen([str(found)], stdout=subprocess.DEVNULL,
+                                        stderr=subprocess.DEVNULL,
+                                        creationflags=_creation_flags())
+                return _ok(f"Запускаю {target}.", program=prog,
+                           kind="app", pid=proc.pid)
             except Exception as exc:
                 return _fail(f"Не удалось запустить {prog}: {exc}")
-        launched, detail = _open_native(prog, o)
-        return _ok(f"Запускаю {target} ({prog}).", program=prog, launched=launched,
-                   note="" if launched else "Системный открыватель недоступен в этой среде", kind="app")
+        candidate = _resolve_windows_app(target, prog=prog, original=raw)
+        if candidate:
+            launched, detail = _launch_windows_candidate(candidate, o)
+            return _ok(f"Запускаю «{target}» — найдено: {candidate.get('display') or candidate['value']}.",
+                       program=candidate["value"], kind="app", launched=launched,
+                       detail=detail, resolution=candidate) if launched else _fail(
+                           f"Нашёл «{target}», но не смог запустить: {detail}")
+        return _fail(f"Не смог найти «{target}» среди установленных приложений. "
+                    "Проверьте имя, установите программу или укажите полный путь к .exe. "
+                    "Окно с ошибкой Windows больше не вызывается.")
 
     # Direct executable on PATH
-    if util.which(target):
+    found = util.which(target)
+    if found:
         try:
-            p = subprocess.Popen([target], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return _ok(f"Запускаю {target}, процесс {p.pid}.", kind="app", pid=p.pid)
+            proc = subprocess.Popen([str(found)], stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                    creationflags=_creation_flags())
+            return _ok(f"Запускаю {target}, процесс {proc.pid}.", kind="app", pid=proc.pid)
         except Exception as exc:
             return _fail(str(exc))
 
-    launched, detail = _open_native(target, o)
-    if launched:
-        return _ok(f"Пытаюсь открыть «{target}».", kind="unknown", target=target)
-    return _ok(f"«{target}» не найден в этой системе, но команда принята. "
-               "Подключите локальный агент на своём ПК, чтобы открывать реальные приложения.",
-               kind="missing", target=target, detail=detail)
+    # Arbitrary friendly name such as "Steam": search the real Windows app list.
+    candidate = _resolve_windows_app(target, original=raw)
+    if candidate:
+        launched, detail = _launch_windows_candidate(candidate, o)
+        return _ok(f"Запускаю «{target}» — найдено: {candidate.get('display') or candidate['value']}.",
+                   program=candidate["value"], kind="app", launched=launched,
+                   detail=detail, resolution=candidate) if launched else _fail(
+                       f"Нашёл «{target}», но не смог запустить: {detail}")
+
+    return _fail(f"Не смог найти «{target}» среди установленных приложений. "
+                "Проверьте имя, установите программу или укажите полный путь к файлу/.exe. "
+                "Окно с ошибкой Windows больше не вызывается.")
+
+
+def computer_open(args: dict, o: dict) -> dict:
+    """Open the real Windows 'This PC' virtual folder."""
+    return _open_shell_location("shell:MyComputerFolder", "Этот компьютер", o)
+
+
+def file_open(args: dict, o: dict) -> dict:
+    """Open a file/folder with its system association, optionally by name."""
+    raw = str(args.get("path") or args.get("target") or "").strip().strip('"').strip("'")
+    target = _strip_launch_prefix(raw)
+    if not target:
+        return _fail("Не понял, какой файл или папку открыть.")
+    low = util.normalize(target)
+
+    special = SPECIAL_SHELL_FOLDERS.get(low)
+    if special:
+        return _open_shell_location(special[0], special[1], o)
+
+    if low in FOLDER_ALIASES:
+        folder = Path.home() / FOLDER_ALIASES[low] if FOLDER_ALIASES[low] else Path.home()
+        folder.mkdir(parents=True, exist_ok=True)
+        launched, detail = _open_native(str(folder), o)
+        return _ok(f"Открываю папку {folder}.", path=str(folder),
+                   launched=launched, detail=detail, kind="folder")
+
+    p = Path(target).expanduser()
+    if p.exists():
+        launched, detail = _open_native(str(p.resolve()), o)
+        return _ok(f"Открываю «{p.name}».", path=str(p.resolve()),
+                   launched=launched, detail=detail, kind="file") if launched else _fail(
+                       f"Нашёл «{p.name}», но системный открыватель недоступен: {detail}")
+
+    if _is_uri_or_shell(target):
+        launched, detail = _open_uri(target, o)
+        return _ok(f"Открываю «{target}».", target=target,
+                   launched=launched, detail=detail, kind="uri") if launched else _fail(
+                       f"Не удалось открыть «{target}»: {detail}")
+
+    # If the user named a file rather than a path, find it under the home root.
+    query = p.name if ("/" in target or "\\" in target or _DRIVE_PATH_RE.match(target)) else target
+    search = file_search({"query": query}, o)
+    files = list((search.get("data") or {}).get("files") or [])
+    if not files:
+        return _fail(f"Файл «{query}» не найден. Скажите точный путь или «найди файл {query}».")
+    exact = [f for f in files if Path(f).name.lower() == query.lower()]
+    chosen = exact[0] if exact else files[0]
+    launched, detail = _open_native(chosen, o)
+    if not launched:
+        return _fail(f"Нашёл «{chosen}», но системный открыватель недоступен: {detail}",
+                     path=chosen, matches=files[:5])
+    return _ok(f"Открываю «{Path(chosen).name}».", path=chosen,
+               launched=True, detail=detail, kind="file", matches=files[:5])
 
 
 def app_close(args: dict, o: dict) -> dict:
@@ -442,7 +919,6 @@ def web_search(args: dict, o: dict) -> dict:
     except Exception:
         pass
     return _ok(f"Ищу «{query}». Открыл результаты поиска.", url=url, query=query, engine=engine)
-
 
 # ---------------------------------------------------------------- files
 def _safe(root: Path, raw: str) -> Path:
@@ -704,6 +1180,7 @@ def power(action: str, o: dict) -> dict:
 HANDLERS = {
     "system.status": system_status, "system.time": system_time, "system.processes": system_processes,
     "app.open": app_open, "app.close": app_close, "web.search": web_search,
+    "computer.open": computer_open, "file.open": file_open,
     "file.search": file_search, "file.list": file_list, "file.read": file_read, "file.write": file_write,
     "clipboard.set": clipboard_set, "clipboard.get": clipboard_get,
     "media.volume": media_volume, "media.control": media_control, "screenshot": screenshot,

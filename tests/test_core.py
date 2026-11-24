@@ -29,6 +29,14 @@ class TestNLU(unittest.TestCase):
         ("Джарвис, который час?", "system.time"),
         ("открой youtube.com", "app.open"),
         ("запусти блокнот", "app.open"),
+        ("запусти steam", "app.open"),
+        ("открой приложение steam", "app.open"),
+        ("открой этот компьютер", "computer.open"),
+        ("открой мой компьютер", "computer.open"),
+        ("покажи диски", "computer.open"),
+        ("открой файл report.docx", "file.open"),
+        ("открой папку загрузки", "file.open"),
+        ("прочитай файл notes.txt", "file.read"),
         ("загугли рецепт пасты", "web.search"),
         ("найди на YouTube лекции по физике", "web.search"),
         ("посчитай 15 процентов от 240", "calc"),
@@ -382,6 +390,92 @@ class TestLocalOps(unittest.TestCase):
     def test_shell_blocked_by_default(self):
         r = local_ops.execute("shell.run", {"command": "echo hi"}, {})
         self.assertFalse(r["ok"])
+
+    def test_bare_app_name_never_goes_to_windows_shell(self):
+        with mock.patch.object(local_ops.util, "which", return_value=None), \
+             mock.patch.object(local_ops, "_resolve_windows_app", return_value=None), \
+             mock.patch.object(local_ops, "_open_native", return_value=(True, "MOCK")) as opener:
+            r = local_ops.execute("app.open", {"target": "Steam"}, {})
+        self.assertFalse(r["ok"])
+        self.assertIn("не смог найти", r["message"].lower())
+        self.assertIn("окно с ошибкой", r["message"].lower())
+        opener.assert_not_called()
+
+    def test_app_open_strips_spoken_prefix_and_uses_resolver(self):
+        captured = {}
+        candidate = {"kind": "path", "value": r"C:\Program Files (x86)\Steam\steam.exe",
+                     "display": "Steam"}
+
+        def fake_resolver(target, prog=None, original=None):
+            captured.update(target=target, prog=prog, original=original)
+            return candidate
+
+        with mock.patch.object(local_ops, "IS_WIN", True), \
+             mock.patch.object(local_ops.util, "which", return_value=None), \
+             mock.patch.object(local_ops, "_resolve_windows_app", side_effect=fake_resolver), \
+             mock.patch.object(local_ops, "_launch_windows_candidate",
+                               return_value=(True, "mock launch")) as launcher:
+            r = local_ops.execute("app.open", {"target": "приложение Steam"}, {})
+        self.assertTrue(r["ok"])
+        self.assertEqual(captured["target"], "Steam")
+        self.assertEqual(captured["original"], "приложение Steam")
+        self.assertEqual(captured["prog"], "steam.exe")
+        launcher.assert_called_once_with(candidate, mock.ANY)
+
+    def test_windows_app_resolution_queries_start_apps(self):
+        with mock.patch.object(local_ops, "IS_WIN", True), \
+             mock.patch.object(local_ops, "_powershell_find_app",
+                               return_value=None) as finder, \
+             mock.patch.object(local_ops, "_common_windows_app_paths", return_value=[]):
+            out = local_ops._resolve_windows_app("Steam", prog="steam.exe", original="стим")
+        self.assertIsNone(out)
+        queries = [c.args[0] for c in finder.call_args_list]
+        self.assertIn("Steam", queries)
+        self.assertIn("steam", queries)
+        self.assertIn("стим", queries)
+
+    def test_appid_launch_uses_appsfolder_shell(self):
+        with mock.patch.object(local_ops, "IS_WIN", True), \
+             mock.patch.object(local_ops, "_open_shell_location",
+                               return_value={"ok": True, "launched": True}) as opener:
+            ok, detail = local_ops._launch_windows_candidate(
+                {"kind": "appid", "value": "Valve.Steam!App", "display": "Steam"}, {})
+        self.assertTrue(ok)
+        self.assertEqual(detail, "shell:AppsFolder")
+        self.assertIn("shell:AppsFolder\\Valve.Steam!App", opener.call_args.args[0])
+
+    def test_computer_open_uses_mycomputerfolder(self):
+        with mock.patch.object(local_ops, "_open_shell_location",
+                               return_value={"ok": True, "launched": True}) as opener:
+            r = local_ops.execute("computer.open", {}, {})
+        self.assertTrue(r["ok"])
+        self.assertEqual(opener.call_args.args[0], "shell:MyComputerFolder")
+
+    def test_file_open_opens_existing_path_with_native_launcher(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.docx"
+            path.write_text("test", encoding="utf-8")
+            with mock.patch.object(local_ops, "_open_native",
+                                   return_value=(True, "mock")) as opener:
+                r = local_ops.execute("file.open", {"path": str(path)},
+                                      {"sandbox_root": tmp})
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["data"]["path"], str(path.resolve()))
+        opener.assert_called_once_with(str(path.resolve()), mock.ANY)
+
+    def test_file_open_finds_file_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.docx"
+            path.write_text("test", encoding="utf-8")
+            with mock.patch.object(local_ops, "file_search",
+                                   return_value={"data": {"files": [str(path)]}}), \
+                 mock.patch.object(local_ops, "_open_native",
+                                   return_value=(True, "mock")) as opener:
+                r = local_ops.execute("file.open", {"path": "report.docx"},
+                                      {"sandbox_root": tmp})
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["data"]["path"], str(path))
+        opener.assert_called_once_with(str(path), mock.ANY)
 
 
 if __name__ == "__main__":

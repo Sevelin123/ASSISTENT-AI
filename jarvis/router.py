@@ -18,7 +18,8 @@ CANCEL_RE = re.compile(r"^(?:отмена|отмени|cancel|не надо|пе
 VERBOSE_ACTIONS = {
     "chat.smalltalk", "chat.help", "llm.ask", "calc", "note.list", "task.list",
     "reminder.list", "memory.recall", "system.time", "system.status", "system.processes",
-    "file.list", "file.read", "file.search", "clipboard.get", "screenshot",
+    "file.list", "file.read", "file.open", "file.search", "computer.open",
+    "clipboard.get", "screenshot",
 }
 
 

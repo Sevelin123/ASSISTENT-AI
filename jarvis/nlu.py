@@ -168,6 +168,10 @@ RULES: list[Rule] = [
     (r"^\s*[\d\(\-\+\.][\d\s\+\-\*\/\^\(\)\.,%x×÷:]*\s*=?\s*$",
      lambda t, m: I("calc", expression=to_expression(t))),
 
+    # ---- virtual shell folders (before generic "open") ----
+    (r"(открой|открыть|запусти|запустить|покажи|open|launch|start)\s+(?:мой\s+|этот\s+|this\s+|my\s+)?(компьютер|пк|computer|pc|диски|drives)\b",
+     lambda t, m: I("computer.open")),
+
     # ---- system ----
     (r"(который час|сколько времени|какое время|what time|current time|время\?)",
      lambda t, m: I("system.time")),
@@ -224,7 +228,9 @@ RULES: list[Rule] = [
      lambda t, m: I("file.search", query=clean(m.group(2)))),
     (r"(покажи (?:содержимое )?папк[уи]|что в папке|list folder|list files|покажи файлы)\s*[:—-]?\s*(.*)",
      lambda t, m: I("file.list", path=clean(m.group(2)))),
-    (r"(прочитай файл|открой файл|прочти файл|read file|покажи файл)\s*[:—-]?\s*(.+)",
+    (r"(открой файл|открыть файл|открой папку|открыть папку|открой документ|запусти файл|запустить файл|покажи файл|open file|open folder|launch file)\s*[:—-]?\s*(.+)",
+     lambda t, m: I("file.open", path=clean(m.group(2)))),
+    (r"(прочитай файл|прочти файл|read file|покажи содержимое файла|прочитай документ)\s*[:—-]?\s*(.+)",
      lambda t, m: I("file.read", path=clean(m.group(2)))),
     (r"(создай файл|запиши в файл|write file|сохрани в файл)\s*[:—-]?\s*(.+)",
      lambda t, m: _write_file(m.group(2))),

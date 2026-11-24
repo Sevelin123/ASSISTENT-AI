@@ -159,7 +159,10 @@ class TestHTTPContract(unittest.TestCase):
                                b"ERR_CONNECTION_REFUSED", b"FIX-SERVER.bat",
                                b"START-JARVIS.bat", b"--no-proxy-server",
                                "Нужен ли API-ключ?".encode(), "НЕТ".encode(),
-                               "Ключ из Arena".encode(), "JARVIS-APP.exe".encode()):
+                               "Ключ из Arena".encode(), "JARVIS-APP.exe".encode(),
+                               "Как открыть файлы, «Этот компьютер» и приложения?".encode(),
+                               b"shell:MyComputerFolder", b"cmd /c start",
+                               "Не удается найти".encode()):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
         self.assertEqual(status, 200)
@@ -176,7 +179,8 @@ class TestHTTPContract(unittest.TestCase):
                                b"127.0.0.1:8080", b"FIX-SERVER.bat",
                                b"START-JARVIS.bat", b"--no-proxy-server",
                                b"ERR_CONNECTION_REFUSED", "Нужен ли API-ключ?".encode(),
-                               b"Ollama"):
+                               b"Ollama", b"shell:MyComputerFolder",
+                               "Не удается найти".encode(), b"Steam"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/start-here")
         self.assertEqual(status, 200)

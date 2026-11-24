@@ -107,7 +107,7 @@ class TestInstallerFiles(unittest.TestCase):
                        "server.err.log", "--no-proxy-server",
                        "Нужен ли API-ключ?", "platform.openai.com/api-keys",
                        "Ключ из Arena", "SMART-MODE.bat", "JARVIS-APP.exe",
-                       "app-mode"):
+                       "app-mode", "Не удается найти \"Steam\"", "shell:MyComputerFolder"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, page)
         self.assertNotIn('<link rel="stylesheet"', page)
@@ -132,6 +132,8 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("Можно ли взять API-ключ из Arena?", readme)
         self.assertIn("JARVIS-APP.exe", readme)
         self.assertIn("SMART-MODE.bat", readme)
+        self.assertIn("Открытие приложений, файлов и «Этот компьютер»", readme)
+        self.assertIn("shell:MyComputerFolder", readme)
 
     def test_api_key_is_optional_everywhere(self):
         """The installer must never imply that an API key is required."""
@@ -315,6 +317,9 @@ class TestWindowsBundle(unittest.TestCase):
             self.assertIn("КЛЮЧ ИЗ ARENA НЕ ИСПОЛЬЗУЕТСЯ", readme)
             self.assertIn("SMART-MODE.bat", readme)
             self.assertIn("JARVIS-APP.exe", readme)
+            self.assertIn("ФАЙЛЫ, «ЭТОТ КОМПЬЮТЕР» И ПРИЛОЖЕНИЯ", readme)
+            self.assertIn("shell:MyComputerFolder", readme)
+            self.assertIn("Steam", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):
@@ -365,6 +370,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("FIX-SERVER.bat", page)
         self.assertIn("--no-proxy-server", page)
         self.assertIn("Нужен ли API-ключ?", page)
+        self.assertIn("Как открыть файлы, «Этот компьютер» и приложения?", page)
+        self.assertIn("shell:MyComputerFolder", page)
         self.assertIn("Можно ли взять API-ключ из Arena?", page)
         self.assertIn("JARVIS-APP.exe", page)
         self.assertNotIn("http://localhost:8080", page, "local URL must stay 127.0.0.1")
@@ -393,10 +400,43 @@ class TestWindowsNativeActions(unittest.TestCase):
         server = (ROOT / "jarvis/skills/local_ops.py").read_text(encoding="utf-8")
         agent = (ROOT / "jarvis_agent.py").read_text(encoding="utf-8")
         for marker in ("os.startfile", "[Console]::In.ReadToEnd() | Set-Clipboard",
-                       '"AppData", "Windows"', "endswith(\".exe\")"):
+                       '"AppData", "Windows"', "endswith(\".exe\")",
+                       "Get-StartApps", "shell:MyComputerFolder", "App Paths",
+                       "computer.open", "file.open", "POWERSHELL_FIND_APP",
+                       "_can_shell_open", "JARVIS_APP_QUERY"):
             with self.subTest(marker=marker):
                 self.assertIn(marker, server)
                 self.assertIn(marker, agent)
+
+    def test_windows_app_lookup_uses_system_sources(self):
+        server = (ROOT / "jarvis/skills/local_ops.py").read_text(encoding="utf-8")
+        agent = (ROOT / "jarvis_agent.py").read_text(encoding="utf-8")
+        for needle in ("Get-StartApps", "App Paths", "*.lnk", "DisplayName",
+                       "shell:AppsFolder", "Get-Command -Name $q -CommandType Application",
+                       "Не удается найти"):
+            for text in (server, agent):
+                with self.subTest(needle=needle, file="local_ops/agent"):
+                    self.assertIn(needle, text)
+
+    def test_open_actions_are_documented(self):
+        checks = {
+            "README.md": ["Открытие приложений, файлов и «Этот компьютер»",
+                          "shell:MyComputerFolder", "Steam", "37 действий"],
+            "START-HERE.html": ["Не удается найти \"Steam\"", "shell:MyComputerFolder",
+                                "открой файл report.docx"],
+            "web/install.html": ["Не удается найти \"Steam\"", "shell:MyComputerFolder",
+                                  "открой этот компьютер"],
+            "windows/README.md": ["Открытие файлов, «Этот компьютер» и приложений",
+                                   "App Paths", "37 действий"],
+            "jarvis/server.py": ["ФАЙЛЫ, «ЭТОТ КОМПЬЮТЕР» И ПРИЛОЖЕНИЯ",
+                                  "shell:MyComputerFolder", "cmd/start"],
+            "web/app.js": ["Этот компьютер", "Запусти Steam", "открой файл отчёт.docx"],
+        }
+        for rel, needles in checks.items():
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            for needle in needles:
+                with self.subTest(file=rel, needle=needle):
+                    self.assertIn(needle, text)
 
     def test_agent_is_standalone(self):
         agent = (ROOT / "jarvis_agent.py").read_text(encoding="utf-8")
