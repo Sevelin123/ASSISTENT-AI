@@ -55,6 +55,8 @@ class TestInstallerFiles(unittest.TestCase):
             "Startup", "/api/health", "/api/agent/status", "jarvis.config.json",
             "ConvertTo-Crlf", "New-JarvisIcon", "-Uninstall", "-NoAutostart", "-Lan",
             "New-NetFirewallRule", "ru-RU", "Get-ChildItem $key", "repoSha",
+            "Speech_OneCore", "VOICE-HELP.txt", "ms-settings:speech",
+            "DISM /Online /Cleanup-Image /RestoreHealth", "Home Single Language",
         ]
         for m in markers:
             with self.subTest(marker=m):
@@ -145,6 +147,24 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("refs/heads/arena/57b8f59e-assistent-ai", page)
         self.assertNotIn("/zip/6268dbe", page, "stale pinned SHA")
         self.assertIn("data-href-origin", page)  # works on cloud AND local installs
+
+    def test_russian_voice_troubleshooting_everywhere(self):
+        """The 'voice won't install' answer must exist in HUD, FAQ, README and installer."""
+        js = (ROOT / "web/app.js").read_text(encoding="utf-8")
+        html = (ROOT / "web/index.html").read_text(encoding="utf-8")
+        page = (ROOT / "web/install.html").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for marker in ("voiceDiag", "refreshVoices", "voiceschanged",
+                       "ms-settings:speech", "isRuVoice", "btnVoiceTest"):
+            self.assertIn(marker, js, f"app.js missing {marker}")
+        self.assertIn('id="voiceDiag"', html)
+        self.assertIn('id="btnVoiceRefresh"', html)
+        for marker in ("Home Single Language", "DISM /Online /Cleanup-Image /RestoreHealth",
+                       "sfc /scannow", "Set-WinUserLanguageList", "Online (Natural)",
+                       "Text-to-speech", "полностью"):
+            self.assertIn(marker, page, f"install FAQ missing {marker}")
+        self.assertIn("Русский язык/голос не ставится", readme)
+        self.assertIn("VOICE-HELP.txt", readme)
 
 
 class TestWindowsNativeActions(unittest.TestCase):

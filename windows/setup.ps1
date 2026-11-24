@@ -537,19 +537,62 @@ if ($agentOk) { Write-Log 'Агент ПК подключён — реально
 else { Write-Log "Агент ещё подключается. Лог: $LogDir\agent.log" 'WARN' }
 
 # ---------------------------------------------------------------- 9. голос TTS
-$ruVoice = $false
-foreach ($key in @('HKLM:\SOFTWARE\Microsoft\Speech\Voices\Tokens',
-                   'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Speech\Voices\Tokens')) {
+# SAPI5 (Speech\Voices) and OneCore voices live in different registry hives.
+$voiceHives = @(
+    'HKLM:\SOFTWARE\Microsoft\Speech\Voices\Tokens',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Speech\Voices\Tokens',
+    'HKLM:\SOFTWARE\Microsoft\Speech_OneCore\Voices\Tokens',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Speech_OneCore\Voices\Tokens'
+)
+$allVoices = @()
+foreach ($key in $voiceHives) {
     if (Test-Path $key) {
-        $found = Get-ChildItem $key -ErrorAction SilentlyContinue | Where-Object {
-            $_.PSChildName -match 'Irina|Pavel|Russian|ru-RU|Рус' }
-        if ($found) { $ruVoice = $true }
+        $allVoices += @(Get-ChildItem $key -ErrorAction SilentlyContinue |
+                        ForEach-Object { $_.PSChildName })
     }
 }
-if (-not $ruVoice) {
-    Write-Log 'Русский системный голос не найден. Параметры → Время и язык → Речь → добавить русский голос.' 'WARN'
+$allVoices = @($allVoices | Select-Object -Unique)
+$ruVoiceNames = @($allVoices | Where-Object {
+    $_ -match 'Irina|Pavel|Svetlana|Dmitry|Russian|ru-RU|Рус|RU-RU' })
+$ruVoice = $ruVoiceNames.Count -gt 0
+Write-Log "Системных голосов найдено: $($allVoices.Count)" 'INFO'
+if ($ruVoice) {
+    Write-Log "Русский голос для озвучивания найден: $($ruVoiceNames -join ', ')" 'OK'
 } else {
-    Write-Log 'Русский голос для озвучивания найден' 'OK'
+    Write-Log 'Русский СИСТЕМНЫЙ голос не найден — это НЕ блокирует распознавание речи.' 'WARN'
+    Write-Log 'Распознавание делает Chrome/Edge (Web Speech API), язык задаётся в HUD: Настройки → Язык распознавания → ru-RU.' 'INFO'
+    Write-Log 'Для озвучки проще всего открыть HUD в Microsoft Edge: там облачные голоса «Microsoft ... Online (Natural)» без языкового пакета.' 'INFO'
+    Write-Log 'Либо: Параметры → Время и язык → Речь → Добавить голоса → Русский (Россия). Нужны права администратора и Windows Update.' 'INFO'
+    Write-Log 'Если голос не ставится: winver (Home Single Language нельзя), регион Россия, удалить/добавить язык заново, DISM /RestoreHealth + sfc /scannow.' 'INFO'
+    Write-Log 'После установки голосов ПОЛНОСТЬЮ перезапустите браузер и нажмите «Обновить список» в настройках HUD.' 'INFO'
+    $voiceHelp = @"
+РУССКИЙ ГОЛОС: ЕСЛИ НЕ СТАВИТСЯ
+=================================
+
+1.Распознавание речи (что вы говорите) НЕ зависит от языкового пакета Windows.
+  Его делает браузер Chrome/Edge. Язык: HUD -> Настройки -> Язык распознавания -> Русский (ru-RU).
+
+2.Озвучивание ответов: откройте HUD в Microsoft Edge — у него есть онлайн-голоса
+  Microsoft ... Online (Natural), включая русские, без установки языкового пакета.
+  В HUD: Настройки -> Голос и речь -> Обновить список -> Голос ответа -> русский -> Тест речи.
+
+3.Системный голос Windows:
+  Параметры -> Время и язык -> Речь -> Управление голосами -> Добавить голоса -> Русский (Россия).
+  Или: Язык и регион -> Добавить язык -> Русский -> Далее -> отметить «Преобразование текста в речь».
+
+4.Если не ставится:
+  - Win+R -> winver: «Home Single Language» не даёт добавить языковой пакет;
+  - учётная запись Администратор, отключите VPN, обновите Windows, перезагрузитесь;
+  - Страна или регион -> Россия;
+  - удалите русский язык, перезагрузитесь, добавьте заново со всеми галочками;
+  - от админа: DISM /Online /Cleanup-Image /RestoreHealth   затем   sfc /scannow;
+  - полностью перезапустите браузер, иначе новые голоса не появятся в getVoices().
+
+5.Можно вообще выключить озвучивание: скажите «Джарвис, выключи озвучивание».
+
+Открыть параметры: ms-settings:speech  и  ms-settings:regionlanguage
+"@
+    Write-TextFile (Join-Path $InstallDir 'VOICE-HELP.txt') $voiceHelp
 }
 
 # ---------------------------------------------------------------- 10. финал
@@ -572,7 +615,9 @@ Write-Host ''
 Write-Host '    Скажите «Джарвис, который час?» — и пользуйтесь ПК голосом.' -ForegroundColor Green
 Write-Host '    Для ответов на любые вопросы добавьте API-ключ в Настройках HUD.' -ForegroundColor Gray
 if (-not $ruVoice) {
-    Write-Host '    ВНИМАНИЕ: для русской озвучки добавьте русский голос в Параметрах Windows.' -ForegroundColor Yellow
+    Write-Host '    ВНИМАНИЕ: русский системный голос не найден.' -ForegroundColor Yellow
+    Write-Host '    Распознавание речи при этом РАБОТАЕТ (Chrome/Edge), а для озвучки откройте HUD в Edge' -ForegroundColor Gray
+    Write-Host '    или прочитайте VOICE-HELP.txt в папке установки.' -ForegroundColor Gray
 }
 Write-Host ''
 Write-Log '=== Установка завершена ===' 'OK'

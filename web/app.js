@@ -14,7 +14,7 @@
     muted: false, mode: 'push', armed: false, srAvailable: false,
     rec: null, shouldRestart: false, finalBuf: '', interim: '',
     finalizeTimer: null, level: 0, analyser: null, audioCtx: null, micStream: null,
-    voices: [], lastReply: '', keyHeld: false,
+    voices: [], voiceList: [], voiceWarned: false, lastReply: '', keyHeld: false,
   };
 
   const QUICK = [
@@ -148,32 +148,89 @@
   }
 
   // ───────────────────────────────────────────── speech OUTPUT
+  const isRuVoice = (v) =>
+    /^ru/i.test(v.lang || '') ||
+    /russian|рус|irina|pavel|svetlana|dmitry|google рус/i.test(v.name || '');
+
+  function refreshVoices() {
+    const el = $('voiceDiag');
+    if (!('speechSynthesis' in window)) {
+      if (el) {
+        el.className = 'voice-diag bad';
+        el.innerHTML = '<b>Синтез речи не поддерживается этим браузером.</b> Откройте HUD в Chrome или Edge.';
+      }
+      return;
+    }
+    const list = window.speechSynthesis.getVoices() || [];
+    if (list.length) state.voices = list;
+    // Russian first, then by language — and mark network voices explicitly.
+    state.voiceList = state.voices.slice().sort((a, b) =>
+      (isRuVoice(a) ? 0 : 1) - (isRuVoice(b) ? 0 : 1) ||
+      String(a.lang).localeCompare(String(b.lang)) ||
+      String(a.name).localeCompare(String(b.name)));
+
+    const sel = $('setVoice');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Автоматически (лучший доступный)</option>';
+    state.voiceList.forEach((v, i) => {
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = `${v.name} · ${v.lang}${v.localService ? '' : ' · онлайн'}`;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+
+    if (!el) return;
+    const ru = state.voiceList.filter(isRuVoice);
+    if (!state.voiceList.length) {
+      el.className = 'voice-diag bad';
+      el.innerHTML = '<b>Голосов не найдено (0).</b> Это движок браузера/ОС, а не Джарвис. '
+        + 'Откройте HUD в <b>Microsoft Edge</b> — у него есть облачные голоса «Microsoft … Online (Natural)» '
+        + 'даже без русского языкового пакета Windows. После установки голосов <b>полностью перезапустите браузер</b>. '
+        + '<a href="ms-settings:speech">Открыть параметры речи Windows ↗</a>';
+    } else if (!ru.length) {
+      el.className = 'voice-diag warn';
+      el.innerHTML = `<b>Русского голоса нет</b> — всего голосов: ${state.voiceList.length}. `
+        + 'Выберите любой в списке или откройте HUD в Edge / Chrome: у них есть сетевые русские голоса '
+        + 'независимо от настроек Windows. <a href="ms-settings:speech">Параметры речи ↗</a> · '
+        + '<a href="ms-settings:regionlanguage">Язык и регион ↗</a>';
+    } else {
+      el.className = 'voice-diag good';
+      el.innerHTML = `<b>Русский голос найден</b> — ${ru.length} из ${state.voiceList.length}: `
+        + `${escapeHtml(ru.slice(0, 3).map((v) => v.name).join(', '))}. `
+        + 'Выберите его выше и нажмите «Тест речи».';
+    }
+  }
+
   function initVoices() {
-    if (!('speechSynthesis' in window)) return;
-    const load = () => {
-      state.voices = window.speechSynthesis.getVoices() || [];
-      const sel = $('setVoice');
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">Автоматически</option>';
-      state.voices.forEach((v, i) => {
-        const o = document.createElement('option');
-        o.value = String(i);
-        o.textContent = `${v.name} · ${v.lang}`;
-        sel.appendChild(o);
-      });
-      sel.value = cur;
-    };
-    load();
-    window.speechSynthesis.addEventListener?.('voiceschanged', load);
+    refreshVoices();
+    // Chrome/Edge populate getVoices() asynchronously; the event plus retries
+    // cover both the normal case and browsers that never fire voiceschanged.
+    window.speechSynthesis?.addEventListener?.('voiceschanged', refreshVoices);
+    [700, 2000, 4000].forEach((t) => setTimeout(refreshVoices, t));
   }
 
   function pickVoice() {
-    if (!state.voices.length) return null;
+    const list = state.voiceList.length ? state.voiceList : state.voices;
+    if (!list.length) return null;
     const sel = $('setVoice').value;
-    if (sel !== '' && state.voices[Number(sel)]) return state.voices[Number(sel)];
-    const lang = (state.config?.lang || 'ru-RU').toLowerCase();
-    const ru = lang.startsWith('ru');
-    return state.voices.find((v) => v.lang.toLowerCase().startsWith(ru ? 'ru' : 'en')) || null;
+    if (sel !== '' && list[Number(sel)]) return list[Number(sel)];
+    const ru = (state.config?.lang || 'ru-RU').toLowerCase().startsWith('ru');
+    return (ru ? list.find(isRuVoice) : list.find((v) => /^en/i.test(v.lang))) || null;
+  }
+
+  function testVoice() {
+    if (!('speechSynthesis' in window)) { toast('Синтез речи недоступен', 'bad'); return; }
+    refreshVoices();
+    const v = pickVoice();
+    const u = new SpeechSynthesisUtterance('Проверка связи. Все системы в норме, сэр.');
+    u.lang = state.config?.lang || 'ru-RU';
+    u.rate = Number(state.config?.voice_rate) || 1;
+    u.pitch = Number(state.config?.voice_pitch) || 1;
+    if (v) u.voice = v;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    toast(v ? `Тест голоса: ${v.name}` : 'Тест: голос браузера по умолчанию');
   }
 
   function setSpeaking(on) {
@@ -200,6 +257,11 @@
       u.pitch = Number(state.config.voice_pitch) || 1;
       const v = pickVoice();
       if (v) u.voice = v;
+      if (!state.voices.length && !state.voiceWarned) {
+        // Language alone often makes Chrome/Edge pull a network voice, but warn once.
+        state.voiceWarned = true;
+        toast('Системных голосов нет — откройте HUD в Edge или проверьте Настройки → Голос и речь', 'warn');
+      }
       u.onend = u.onerror = () => { setSpeaking(false); resumeAfterSpeech(); };
       setSpeaking(true);
       window.speechSynthesis.speak(u);
@@ -701,7 +763,12 @@
       addMsg('system', 'История диалога очищена.');
     });
 
-    $('btnSettings').addEventListener('click', () => openDrawer(true));
+    $('btnVoiceRefresh').addEventListener('click', () => {
+      refreshVoices();
+      toast(state.voices.length ? `Найдено голосов: ${state.voices.length}` : 'Голоса пока не загрузились — откройте HUD в Edge', 'warn');
+    });
+    $('btnVoiceTest').addEventListener('click', testVoice);
+    $('btnSettings').addEventListener('click', () => { refreshVoices(); openDrawer(true); });
     $('btnCloseSettings').addEventListener('click', () => openDrawer(false));
     $('settingsScrim').addEventListener('click', () => openDrawer(false));
     $('btnSaveSettings').addEventListener('click', saveSettings);

@@ -104,7 +104,8 @@ class TestHTTPContract(unittest.TestCase):
                 self.assertEqual(status, 200)
                 self.assertIn("text/html", headers.get("Content-Type", ""))
                 for needle in (b"INSTALL_WINDOWS.bat", b"JARVIS-Windows.zip",
-                               b"jarvis_agent.py", b"127.0.0.1:8080"):
+                               b"jarvis_agent.py", b"127.0.0.1:8080",
+                               b"Home Single Language", b"ms-settings:speech"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
         self.assertEqual(status, 200)

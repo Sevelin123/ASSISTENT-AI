@@ -350,6 +350,23 @@ kbd { border: 1px solid var(--line); padding: 2px 5px; border-radius: 2px; color
 .hint.small { font-size: 9.5px; margin: 10px 0 0; }
 .hint b { color: var(--text-dim); font-weight: 600; }
 code { font: 400 10px var(--mono); color: var(--teal); background: rgba(75,227,192,.08); padding: 1px 4px; border-radius: 2px; }
+.voice-diag { border: 1px solid var(--line); border-left: 2px solid var(--text-faint);
+  background: rgba(8,26,40,.6); padding: 10px 12px; margin: -3px 0 10px;
+  font: 400 10.5px/1.55 var(--body); color: var(--text-dim); border-radius: 2px; }
+.voice-diag b { color: var(--text); }
+.voice-diag.good { border-left-color: var(--teal); background: rgba(75,227,192,.07); }
+.voice-diag.good b { color: var(--teal); }
+.voice-diag.warn { border-left-color: var(--amber); background: rgba(255,196,107,.07); }
+.voice-diag.warn b { color: var(--amber); }
+.voice-diag.bad { border-left-color: var(--red); background: rgba(255,107,122,.07); }
+.voice-diag.bad b { color: var(--red); }
+.voice-diag a { color: var(--cyan); text-decoration: none; border-bottom: 1px dotted var(--cyan); }
+.voice-diag a:hover { color: #fff; }
+.voice-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.voice-tools button, .voice-tools a { border: 1px solid var(--line); background: rgba(86,225,245,.05);
+  color: var(--text-dim); font: 500 8.5px var(--mono); letter-spacing: .6px; padding: 7px 9px;
+  border-radius: 2px; text-decoration: none; transition: .2s; }
+.voice-tools button:hover, .voice-tools a:hover { color: var(--cyan); border-color: var(--line-strong); }
 .range-row { display: flex; align-items: center; gap: 10px; }
 .range-row input { flex: 1; accent-color: var(--cyan); margin-top: 6px; }
 .range-row output { font: 500 11px var(--mono); color: var(--cyan); min-width: 34px; }

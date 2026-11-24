@@ -189,6 +189,15 @@
         </label>
         <label>Слово активации <input id="setWake" type="text" placeholder="джарвис" /></label>
         <label>Голос ответа <select id="setVoice"><option>Автоматически</option></select></label>
+        <div class="voice-diag" id="voiceDiag">Проверяю доступные голоса…</div>
+        <div class="voice-tools">
+          <button type="button" id="btnVoiceRefresh">⟳ ОБНОВИТЬ СПИСОК</button>
+          <button type="button" id="btnVoiceTest">▶ ТЕСТ РЕЧИ</button>
+          <a href="ms-settings:speech">⚙ ПАРАМЕТРЫ РЕЧИ WINDOWS ↗</a>
+        </div>
+        <p class="hint small"><b>Распознавание речи не зависит от Windows</b> — его делает Chrome/Edge.
+          Для озвучки используйте голоса браузера: в Edge есть облачные «Microsoft … Online (Natural)»
+          даже без русского языкового пакета. После установки голосов полностью перезапустите браузер.</p>
         <label>Скорость речи <div class="range-row"><input id="setRate" type="range" min="0.6" max="1.6" step="0.05" /><output id="outRate">1.00</output></div></label>
         <label>Тон голоса <div class="range-row"><input id="setPitch" type="range" min="0.6" max="1.5" step="0.05" /><output id="outPitch">1.00</output></div></label>
         <label class="check"><input id="setSpeak" type="checkbox" /><span>Озвучивать ответы вслух</span></label>
