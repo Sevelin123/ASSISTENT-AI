@@ -344,7 +344,15 @@ foreach ($sub in @('jarvis', 'web', 'tests', 'windows')) {
             Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
-Write-Log 'Файлы приложения скопированы' 'OK'
+# Ключевые файлы помощи доступны прямо в корне установки (двойной клик).
+foreach ($extra in @('FIX-SERVER.bat', 'START-HERE.html')) {
+    $extraSrc = Join-Path $src $extra
+    if (Test-Path $extraSrc) { Copy-Item $extraSrc -Destination $InstallDir -Force }
+}
+# windows\fix-server.ps1 должен лежать и в корне установки для FIX-SERVER.bat.
+$winSrc = Join-Path $AppDir 'windows'
+if (Test-Path $winSrc) { Copy-Item $winSrc -Destination $InstallDir -Recurse -Force }
+Write-Log 'Файлы приложения и FIX-SERVER.bat скопированы' 'OK'
 
 # Конфигурация (не перезаписываем пользовательские настройки и ключи)
 if (-not $hadConfig) {
@@ -479,6 +487,7 @@ New-Shortcut -Path (Join-Path $Programs 'Открыть J.A.R.V.I.S..lnk') -Targ
     -Arguments ('"' + (Join-Path $InstallDir 'open-hud.vbs') + '"') `
     -WorkDir $InstallDir -Icon $IconLocation | Out-Null
 New-Shortcut -Path (Join-Path $Programs 'Перезапустить сервисы.lnk') -Target (Join-Path $InstallDir 'restart-services.cmd') -WorkDir $InstallDir | Out-Null
+New-Shortcut -Path (Join-Path $Programs 'Починить связь с сервером.lnk') -Target (Join-Path $InstallDir 'FIX-SERVER.bat') -WorkDir $InstallDir | Out-Null
 New-Shortcut -Path (Join-Path $Programs 'Остановить.lnk') -Target (Join-Path $InstallDir 'stop-services.cmd') -WorkDir $InstallDir | Out-Null
 New-Shortcut -Path (Join-Path $Programs 'Логи.lnk') -Target $LogDir -WorkDir $InstallDir | Out-Null
 New-Shortcut -Path (Join-Path $Programs 'Удалить.lnk') -Target (Join-Path $AppDir 'UNINSTALL_WINDOWS.bat') -WorkDir $InstallDir | Out-Null
@@ -612,6 +621,8 @@ Write-Host '  │   УСТАНОВКА ЗАВЕРШЕНА                       
 Write-Host '  └─────────────────────────────────────────────────────────┘' -ForegroundColor Cyan
 Write-Host ''
 Write-Host "    HUD:            $HudUrl" -ForegroundColor White
+Write-Host '    ВАЖНО:          открывать 127.0.0.1, а не localhost / file:// / *.e2b.app' -ForegroundColor Yellow
+Write-Host "    Нет связи:      $InstallDir\FIX-SERVER.bat  (двойной клик)" -ForegroundColor Yellow
 Write-Host "    Папка:          $InstallDir" -ForegroundColor Gray
 Write-Host "    Ярлык:          Рабочий стол → J.A.R.V.I.S." -ForegroundColor Gray
 Write-Host "    Автозагрузка:   $(if ($NoAutostart) {'выключена'} else {'включена'})" -ForegroundColor Gray

@@ -33,6 +33,8 @@ goto END
 :FAIL
 echo.
 echo   [X] Installation failed. See %LOCALAPPDATA%\JARVIS\install.log
+echo       If the HUD says "cannot connect to server": run FIX-SERVER.bat from the archive.
+echo       Open EXACTLY http://127.0.0.1:8080 (not localhost, not *.e2b.app).
 echo       Offline archive: codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai
 echo.
 pause

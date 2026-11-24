@@ -178,6 +178,12 @@
 
   <h2>ЧАСТЫЕ ВОПРОСЫ</h2>
   <div class="faq">
+    <details open><summary>Не удаётся связаться с сервером / ERR_CONNECTION_REFUSED</summary>
+      <p><b>1. Откройте именно <code class="inl">http://127.0.0.1:8080</code></b> — не <code class="inl">localhost:8080</code> (на Windows он часто уходит в IPv6 <code class="inl">::1</code>), не <code class="inl">file://.../web/index.html</code> и не старую ссылку <code class="inl">*.e2b.app</code>. HUD работает только через локальный сервер.</p>
+      <p><b>2. Двойной клик по <a href="/download/FIX-SERVER.bat" download style="color:var(--cyan)">FIX-SERVER.bat</a></b> (лежит в архиве и в <code class="inl">%LOCALAPPDATA%\JARVIS</code>). Он проверит Python и порт, покажет, кто его занимает, перезапустит сервер и агент, запишет логи и откроет браузер.</p>
+      <p><b>3. Порт занят?</b> <code class="inl">FIX-SERVER.bat -Port 9000</code> → <code class="inl">http://127.0.0.1:9000</code>. Полная переустановка: <code class="inl">INSTALL_WINDOWS.bat -Port 9000</code>. Логи: <code class="inl">%LOCALAPPDATA%\JARVIS\logs\server.err.log</code>.</p>
+      <p>В HUD при обрыве связи теперь появляется красная плашка с диагностикой и кнопками «FIX-SERVER.bat», «Архив с GitHub», «Повторить».</p>
+    </details>
     <details open><summary>502 BAD GATEWAY / SANDBOX NOT FOUND — облачная ссылка умерла</summary>
       <p>Это <b>не поломка Джарвиса</b>: временная песочница-предпросмотр выключена, поэтому шлюз не находит её. Не пытайтесь «починить» старую ссылку <code class="inl">https://8080-….e2b.app</code>.</p>
       <p><b>Что делать:</b> нажмите <b>«АРХИВ С GITHUB · ВСЕГДА АКТУАЛЬНЫЙ»</b> выше (или откройте <a href="https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai" style="color:var(--cyan)">прямую ссылку</a>), распакуйте и двойным кликом запустите <code class="inl">INSTALL_WINDOWS.bat</code>. В архиве есть <code class="inl">START-HERE.html</code> — автономная инструкция, которую можно открыть без сервера.</p>

@@ -83,6 +83,22 @@
 
 <div class="ok"><b>Готово.</b> Дальше облако не участвует: сервер и агент крутятся на вашем компьютере, заметки/задачи хранятся локально в SQLite. Ярлык «J.A.R.V.I.S.» лежит на рабочем столе.</div>
 
+<h2>«НЕ УДАЁТСЯ СВЯЗАТЬСЯ С СЕРВЕРОМ»</h2>
+<div class="alert">
+  <b>Сначала проверьте адрес.</b> Откройте <b>именно</b> <code>http://127.0.0.1:8080</code>.
+  Не <code>localhost:8080</code> (на Windows он часто уходит в IPv6 <code>::1</code>), не <code>file://.../web/index.html</code>,
+  не старую ссылку <code>*.e2b.app</code> и не адрес облачного предпросмотра. HUD должен открываться через локальный сервер.
+</div>
+<div class="step"><div class="n">✚</div><div>
+  <h3>Двойной клик по FIX-SERVER.bat</h3>
+  <p>Он сам найдёт Python, прочитает порт из <code>jarvis.config.json</code>, покажет, кто занимает порт, остановит зависшие процессы J.A.R.V.I.S., заново поднимет сервер и агент, проверит <code>/api/health</code> и откроет браузер. Логи — в папке <code>logs\</code>.</p>
+</div></div>
+<div class="step"><div class="n">!</div><div>
+  <h3>Если порт 8080 занят</h3>
+  <p>Запустите <code>FIX-SERVER.bat -Port 9000</code> и откройте <code>http://127.0.0.1:9000</code>. Полностью переустановить можно повторным запуском <code>INSTALL_WINDOWS.bat -Port 9000</code>.</p>
+</div></div>
+<p class="note">В HUD при потере связи теперь появляется красная плашка с кнопками «FIX-SERVER.bat», «Архив с GitHub» и «Повторить», а в сообщении объясняется, что именно не так: <code>file://</code>, <code>localhost</code>, мёртвое облако или выключенный локальный сервер.</p>
+
 <h2>ЕСЛИ ЧТО-ТО ПОШЛО НЕ ТАК</h2>
 
 <details open><summary>Русский язык / голос не ставится в Параметрах Windows</summary>
@@ -94,6 +110,10 @@
 
 <details><summary>Окно установщика мигает и закрывается</summary>
   <p>Запустите BAT из <code>cmd</code>, чтобы увидеть ошибку. Логи: <code>%LOCALAPPDATA%\JARVIS\install.log</code>, <code>%LOCALAPPDATA%\JARVIS\logs\server.log</code> и <code>logs\agent.log</code>.</p>
+</details>
+
+<details open><summary>ERR_CONNECTION_REFUSED / «Не удаётся связаться с сервером»</summary>
+  <p>Это значит, что <code>python jarvis.py</code> не слушает порт. Откройте <code>http://127.0.0.1:8080</code> (не <code>localhost</code>) и запустите <code>FIX-SERVER.bat</code>. Если в <code>logs\server.err.log</code> написано «Address already in use» — порт занят, используйте <code>-Port 9000</code>. Если Python не найден — перезапустите <code>INSTALL_WINDOWS.bat</code>.</p>
 </details>
 
 <details><summary>Ссылка на предпросмотр снова не открывается</summary>
@@ -114,7 +134,7 @@ python3 jarvis.py</code></pre>
 </details>
 
 <h2>ДОКУМЕНТАЦИЯ В АРХИВЕ</h2>
-<p><a href="README.md">README.md</a> · <a href="windows/README.md">windows/README.md</a> · <a href="INSTALL_WINDOWS.bat">INSTALL_WINDOWS.bat</a> · <a href="UNINSTALL_WINDOWS.bat">UNINSTALL_WINDOWS.bat</a></p>
+<p><a href="README.md">README.md</a> · <a href="windows/README.md">windows/README.md</a> · <a href="FIX-SERVER.bat">FIX-SERVER.bat</a> · <a href="INSTALL_WINDOWS.bat">INSTALL_WINDOWS.bat</a> · <a href="UNINSTALL_WINDOWS.bat">UNINSTALL_WINDOWS.bat</a></p>
 <p class="note">Приложение работает локально, но распознавание речи в Chrome/Edge использует онлайн-сервис браузера — для микрофона нужен интернет. Текстовый чат и команды работают офлайн.</p>
 
 <footer>J.A.R.V.I.S. · версия 1.0.0 · ветка arena/57b8f59e-assistent-ai · только стандартная библиотека Python</footer>

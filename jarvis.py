@@ -4,6 +4,7 @@
 
     python jarvis.py                  # запустить сервер + голосовой HUD
     python jarvis.py --port 9000      # на другом порту
+    python jarvis.py --host 127.0.0.1 # слушать только этот ПК; открывать 127.0.0.1
     python jarvis.py cli              # текстовый режим в терминале
     python jarvis.py agent --server http://localhost:8080
                                       # подключить ЭТУ машину как «ПК»

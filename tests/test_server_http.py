@@ -106,7 +106,8 @@ class TestHTTPContract(unittest.TestCase):
                 for needle in (b"INSTALL_WINDOWS.bat", b"JARVIS-Windows.zip",
                                b"jarvis_agent.py", b"127.0.0.1:8080",
                                b"Home Single Language", b"ms-settings:speech",
-                               b"502 BAD GATEWAY", b"START-HERE.html"):
+                               b"502 BAD GATEWAY", b"START-HERE.html",
+                               b"ERR_CONNECTION_REFUSED", b"FIX-SERVER.bat"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/install")
         self.assertEqual(status, 200)
@@ -120,11 +121,31 @@ class TestHTTPContract(unittest.TestCase):
                 self.assertIn("text/html", headers.get("Content-Type", ""))
                 for needle in (b"502 BAD GATEWAY", b"INSTALL_WINDOWS.bat",
                                b"codeload.github.com", b"START-HERE.html",
-                               b"127.0.0.1:8080"):
+                               b"127.0.0.1:8080", b"FIX-SERVER.bat",
+                               b"ERR_CONNECTION_REFUSED"):
                     self.assertIn(needle, body)
         status, _, body = self.request("HEAD", "/start-here")
         self.assertEqual(status, 200)
         self.assertEqual(body, b"")
+
+    def test_fix_server_download_routes(self):
+        for path, needle in (("/download/FIX-SERVER.bat", b"fix-server.ps1"),
+                             ("/download/windows/fix-server.ps1", b"Test-Health")):
+            with self.subTest(path=path):
+                status, _, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                self.assertIn(needle, body)
+
+    def test_hud_has_connection_alert(self):
+        status, _, body = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn(b'id="serverAlert"', body)
+        self.assertIn(b"FIX-SERVER.bat", body)
+        status, _, js = self.request("GET", "/app.js")
+        self.assertEqual(status, 200)
+        for needle in (b"serverDiagnosis", b"showServerAlert", b"hideServerAlert",
+                       b"127.0.0.1:8080", b"e2b.app"):
+            self.assertIn(needle, js)
 
     def test_windows_readme_route(self):
         status, _, body = self.request("GET", "/windows/README.md")

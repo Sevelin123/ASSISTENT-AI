@@ -42,12 +42,52 @@
   ];
 
   // ───────────────────────────────────────────── API & helpers
+  function hideServerAlert() {
+    const el = $('serverAlert');
+    if (el) el.hidden = true;
+  }
+
+  function serverDiagnosis(err) {
+    const why = err?.message || 'сеть недоступна';
+    if (location.protocol === 'file:') {
+      return `HUD открыт как файл (${why}). Так нельзя: браузер ищет /api/… на диске. `
+        + 'Закройте вкладку и откройте http://127.0.0.1:8080 после INSTALL_WINDOWS.bat. '
+        + 'Если сервер не поднялся — двойной клик по FIX-SERVER.bat.';
+    }
+    if (/e2b\.app/.test(location.hostname)) {
+      return `Облачный предпросмотр выключен (${why}). Откройте локальный http://127.0.0.1:8080 `
+        + 'или скачайте архив с GitHub и запустите INSTALL_WINDOWS.bat.';
+    }
+    if (/^(localhost|::1)$/i.test(location.hostname)) {
+      return `Вы открыли localhost (${why}), а сервер слушает 127.0.0.1. `
+        + 'Замените адрес в строке браузера на http://127.0.0.1:8080 — на Windows localhost часто уходит в IPv6 ::1.';
+    }
+    return `Локальный сервер не отвечает (${why}). Откройте именно http://127.0.0.1:8080, `
+      + 'запустите FIX-SERVER.bat двойным кликом (он проверит порт, Python и перезапустит сервисы), '
+      + 'при занятом порту используйте FIX-SERVER.bat -Port 9000. Не используйте file:// и старые ссылки *.e2b.app.';
+  }
+
+  function showServerAlert(err) {
+    const el = $('serverAlert');
+    if (!el) return;
+    const text = $('serverAlertText');
+    if (text) text.textContent = serverDiagnosis(err);
+    el.hidden = false;
+  }
+
   async function api(path, method = 'GET', body = null) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
-    const r = await fetch(path, opts);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    try {
+      const r = await fetch(path, opts);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      hideServerAlert();
+      return data;
+    } catch (err) {
+      showServerAlert(err);
+      throw err;
+    }
   }
 
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -133,8 +173,8 @@
       speak(res.reply);
       refreshStatus();
     } catch (err) {
-      addMsg('system', 'Связь с ядром потеряна: ' + err.message);
-      toast('Нет связи с сервером', 'bad');
+      addMsg('system', serverDiagnosis(err));
+      toast('Нет связи с сервером — см. подсказку', 'bad');
     } finally {
       setThinking(false);
     }
@@ -768,6 +808,7 @@
       toast(state.voices.length ? `Найдено голосов: ${state.voices.length}` : 'Голоса пока не загрузились — откройте HUD в Edge', 'warn');
     });
     $('btnVoiceTest').addEventListener('click', testVoice);
+    $('serverAlertRetry').addEventListener('click', () => { hideServerAlert(); location.reload(); });
     $('btnSettings').addEventListener('click', () => { refreshVoices(); openDrawer(true); });
     $('btnCloseSettings').addEventListener('click', () => openDrawer(false));
     $('settingsScrim').addEventListener('click', () => openDrawer(false));

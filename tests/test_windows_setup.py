@@ -16,13 +16,14 @@ class TestInstallerFiles(unittest.TestCase):
         for rel in (
             "INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat",
             "windows/setup.ps1", "windows/tray.ps1", "windows/README.md",
-            "START-HERE.html", "web/install.html",
+            "START-HERE.html", "web/install.html", "FIX-SERVER.bat",
+            "windows/fix-server.ps1",
         ):
             with self.subTest(file=rel):
                 self.assertTrue((ROOT / rel).is_file(), f"missing {rel}")
 
     def test_powershell_utf8_bom_and_crlf(self):
-        for rel in ("windows/setup.ps1", "windows/tray.ps1"):
+        for rel in ("windows/setup.ps1", "windows/tray.ps1", "windows/fix-server.ps1"):
             with self.subTest(file=rel):
                 raw = (ROOT / rel).read_bytes()
                 self.assertTrue(raw.startswith(b"\xef\xbb\xbf"),
@@ -32,7 +33,7 @@ class TestInstallerFiles(unittest.TestCase):
                 self.assertNotIn(b"\n", body.replace(b"\r\n", b""), "bare LF found")
 
     def test_batch_files_crlf_no_bom(self):
-        for rel in ("INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat", "start.bat"):
+        for rel in ("INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat", "FIX-SERVER.bat", "start.bat"):
             with self.subTest(file=rel):
                 raw = (ROOT / rel).read_bytes()
                 self.assertFalse(raw.startswith(b"\xef\xbb\xbf"))
@@ -47,6 +48,8 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("arena/57b8f59e-assistent-ai", bat)
         self.assertIn("$a.commit.sha", bat)        # commit SHA handles branch names with '/'
         self.assertNotIn("$b='main'", bat, "main is the stale base commit, not the app")
+        self.assertIn("FIX-SERVER.bat", bat)
+        self.assertIn("127.0.0.1:8080", bat)
         uninstall = (ROOT / "UNINSTALL_WINDOWS.bat").read_text(encoding="utf-8")
         self.assertIn("-Uninstall", uninstall)
 
@@ -61,6 +64,8 @@ class TestInstallerFiles(unittest.TestCase):
             "defaultBranch = 'arena/57b8f59e-assistent-ai'", "refs/heads",
             "Speech_OneCore", "VOICE-HELP.txt", "ms-settings:speech",
             "DISM /Online /Cleanup-Image /RestoreHealth", "Home Single Language",
+            "FIX-SERVER.bat", "fix-server.ps1", "Починить связь с сервером",
+            "127.0.0.1", "$winSrc = Join-Path $AppDir 'windows'",
         ]
         for m in markers:
             with self.subTest(marker=m):
@@ -87,7 +92,8 @@ class TestInstallerFiles(unittest.TestCase):
         for needle in ("502 BAD GATEWAY", "SANDBOX NOT FOUND",
                        "codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai",
                        "INSTALL_WINDOWS.bat", "http://127.0.0.1:8080",
-                       "VOICE-HELP.txt", "START-HERE.html", "windows/README.md"):
+                       "VOICE-HELP.txt", "START-HERE.html", "windows/README.md",
+                       "FIX-SERVER.bat", "ERR_CONNECTION_REFUSED", "server.err.log"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, page)
         self.assertNotIn('<link rel="stylesheet"', page)
@@ -103,6 +109,30 @@ class TestInstallerFiles(unittest.TestCase):
         self.assertIn("codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai", readme)
         self.assertIn("START-HERE.html", readme)
         self.assertIn("502 BAD GATEWAY", readme)
+        self.assertIn("Не удаётся связаться с сервером", readme)
+        self.assertIn("FIX-SERVER.bat", readme)
+
+    def test_fix_server_script_contents(self):
+        ps = (ROOT / "windows/fix-server.ps1").read_text(encoding="utf-8-sig")
+        for marker in ("Test-Health", "Resolve-PythonExe", "Get-NetTCPConnection",
+                       "Start-JarvisServer", "Start-JarvisAgent", "jarvis.config.json",
+                       "127.0.0.1", "/api/health", "-Port 9000", "logs"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, ps)
+        bat = (ROOT / "FIX-SERVER.bat").read_text(encoding="utf-8")
+        self.assertIn("windows\\fix-server.ps1", bat)
+        self.assertIn("-InstallDir", bat)
+        self.assertIn("127.0.0.1:8080", bat)
+
+    def test_startup_prints_local_ipv4_not_localhost(self):
+        server = (ROOT / "jarvis/server.py").read_text(encoding="utf-8")
+        self.assertIn("ОТКРОЙТЕ НА ЭТОМ ПК", server)
+        self.assertIn("http://127.0.0.1:", server)
+        self.assertNotIn("HUD: http://localhost:", server)
+        start = (ROOT / "start.bat").read_text(encoding="utf-8")
+        self.assertIn("http://127.0.0.1:8080", start)
+        self.assertNotIn("http://localhost:8080", start)
+        self.assertIn("FIX-SERVER.bat", start)
 
 
 class TestWindowsBundle(unittest.TestCase):
@@ -126,6 +156,8 @@ class TestWindowsBundle(unittest.TestCase):
             for needed in (
                 "JARVIS-Windows/README-WINDOWS.txt",
                 "JARVIS-Windows/START-HERE.html",
+                "JARVIS-Windows/FIX-SERVER.bat",
+                "JARVIS-Windows/windows/fix-server.ps1",
                 "JARVIS-Windows/INSTALL_WINDOWS.bat",
                 "JARVIS-Windows/UNINSTALL_WINDOWS.bat",
                 "JARVIS-Windows/windows/setup.ps1",
@@ -149,6 +181,7 @@ class TestWindowsBundle(unittest.TestCase):
             self.assertIn("INSTALL_WINDOWS.bat", readme)
             self.assertIn("START-HERE.html", readme)
             self.assertIn("502 BAD GATEWAY", readme)
+            self.assertIn("FIX-SERVER.bat", readme)
             self.assertTrue(z.testzip() is None)
 
     def test_bundle_is_cached(self):
@@ -164,7 +197,9 @@ class TestWindowsBundle(unittest.TestCase):
         for route in ("/download/JARVIS-Windows.zip", "/download/INSTALL_WINDOWS.bat",
                       "/download/windows/", "/download/UNINSTALL_WINDOWS.bat",
                       '"/install"', "/windows/README.md",
-                      "/start-here", "/START-HERE.html"):
+                      "/start-here", "/START-HERE.html",
+                      "/download/FIX-SERVER.bat", "/download/windows/",
+                      "fix-server.ps1"):
             self.assertIn(route, src)
 
     def test_hud_links_to_install_page(self):
@@ -174,6 +209,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("boot-install", html)
         self.assertIn('href="/START-HERE.html"', html)
         self.assertIn("OFFLINE-ИНСТРУКЦИЯ", html)
+        self.assertIn('href="/download/FIX-SERVER.bat"', html)
+        self.assertIn('id="serverAlert"', html)
 
     def test_install_page_has_permanent_github_link(self):
         page = (ROOT / "web/install.html").read_text(encoding="utf-8")
@@ -183,6 +220,8 @@ class TestWindowsBundle(unittest.TestCase):
         self.assertIn("data-href-origin", page)  # works on cloud AND local installs
         self.assertIn("502 BAD GATEWAY", page)
         self.assertIn("START-HERE.html", page)
+        self.assertIn("ERR_CONNECTION_REFUSED", page)
+        self.assertIn("FIX-SERVER.bat", page)
 
     def test_russian_voice_troubleshooting_everywhere(self):
         """The 'voice won't install' answer must exist in HUD, FAQ, README and installer."""

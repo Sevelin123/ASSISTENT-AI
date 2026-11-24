@@ -254,6 +254,7 @@
           </div>
           <a class="download-btn ghost" href="/install" target="_blank" rel="noopener">ОТКРЫТЬ СТРАНИЦУ УСТАНОВКИ (/install)</a>
           <a class="download-btn ghost" href="/START-HERE.html" target="_blank" rel="noopener">OFFLINE-ИНСТРУКЦИЯ (ЕСЛИ ПРЕВЬЮ УМЕРЛО)</a>
+          <a class="download-btn ghost" href="/download/FIX-SERVER.bat" download>↓ ПОЧИНИТЬ СВЯЗЬ С СЕРВЕРОМ (FIX-SERVER.bat)</a>
           <p class="hint small">Параметры: <code>-Port 9000</code>, <code>-Lan</code>, <code>-NoAutostart</code>.
             Удаление: <code>UNINSTALL_WINDOWS.bat</code>. Подробности — <code>windows/README.md</code> в архиве.</p>
         </div>
@@ -282,6 +283,19 @@
     <div class="examples">
       <h3>ПРИМЕРЫ ФРАЗ</h3>
       <div id="examplesList"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ CONNECTION ERROR ══════════════════ -->
+  <div class="server-alert" id="serverAlert" hidden>
+    <div>
+      <b>⚠ НЕТ СВЯЗИ С ЛОКАЛЬНЫМ СЕРВЕРОМ</b>
+      <p id="serverAlertText">Проверяю…</p>
+    </div>
+    <div class="server-alert-actions">
+      <a href="/download/FIX-SERVER.bat" download>↓ FIX-SERVER.bat</a>
+      <a href="https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai">↓ АРХИВ С GITHUB</a>
+      <button type="button" id="serverAlertRetry">⟳ ПОВТОРИТЬ</button>
     </div>
   </div>
 

@@ -58,6 +58,12 @@ WINDOWS_README = """J.A.R.V.I.S. — автоматическая установ
    - откроет http://127.0.0.1:8080 в браузере
 4. Разрешите микрофон и скажите: «Джарвис, который час?»
 
+ОТКРЫВАТЬ НУЖНО ТОЛЬКО http://127.0.0.1:8080
+(не localhost, не file://web/index.html и не старую ссылку *.e2b.app).
+Если браузер пишет «Не удаётся связаться с сервером» — двойной клик
+по FIX-SERVER.bat: он проверит порт, Python, перезапустит сервер и агент
+и покажет логи. Другой порт: FIX-SERVER.bat -Port 9000.
+
 Для распознавания речи нужен Chrome или Edge.
 Полная документация: windows/README.md и README.md
 
@@ -238,9 +244,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(BASE_DIR / "INSTALL_WINDOWS.bat", "INSTALL_WINDOWS.bat")
         if path in ("/UNINSTALL_WINDOWS.bat", "/download/UNINSTALL_WINDOWS.bat"):
             return self._file(BASE_DIR / "UNINSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat")
+        if path in ("/FIX-SERVER.bat", "/download/FIX-SERVER.bat", "/download/fix-server.bat"):
+            return self._file(BASE_DIR / "FIX-SERVER.bat", "FIX-SERVER.bat")
         if path.startswith("/download/windows/"):
             name = path.rsplit("/", 1)[-1]
-            if name in {"setup.ps1", "tray.ps1", "README.md"}:
+            if name in {"setup.ps1", "tray.ps1", "fix-server.ps1", "README.md"}:
                 return self._file(BASE_DIR / "windows" / name, name)
         if path in ("/download/JARVIS-Windows.zip", "/download/windows-bundle", "/download/windows.zip"):
             try:
@@ -418,9 +426,12 @@ def serve(host: str | None = None, port: int | None = None, app: JarvisApp | Non
     h, p = host or cfg.host, int(port or cfg.port)
     server = Server((h, p), app)
     app.start_workers()
-    print(f"\n  J.A.R.V.I.S. online  →  http://0.0.0.0:{p}", flush=True)
-    print(f"  HUD: http://localhost:{p}   |   Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py",
-          flush=True)
-    print("  Windows installer: /download/JARVIS-Windows.zip  (or /download/INSTALL_WINDOWS.bat)\n",
+    local_url = f"http://127.0.0.1:{p}" if h in ("0.0.0.0", "127.0.0.1", "localhost", "::") else f"http://{h}:{p}"
+    print(f"\n  J.A.R.V.I.S. online  →  bind {h}:{p}", flush=True)
+    print(f"  ОТКРОЙТЕ НА ЭТОМ ПК: {local_url}   (не localhost)", flush=True)
+    print(f"  Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py", flush=True)
+    if h == "0.0.0.0":
+        print(f"  Из локальной сети: http://<IP-этого-ПК>:{p}", flush=True)
+    print("  Нет связи? Двойной клик FIX-SERVER.bat · Архив: /download/JARVIS-Windows.zip\n",
           flush=True)
     return server

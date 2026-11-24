@@ -40,6 +40,18 @@ python jarvis.py
 
 > **Видите `502 BAD GATEWAY / SANDBOX NOT FOUND`?** Это всего лишь выключенная временная облачная песочница, а не поломка приложения. Не чините старую ссылку `https://8080-….e2b.app` — используйте архив с GitHub и `START-HERE.html`. После установки открывайте только **свой** `http://127.0.0.1:8080`.
 
+### ❌ «Не удаётся связаться с сервером» / `ERR_CONNECTION_REFUSED`
+
+Это **другая** ошибка: локальный `python jarvis.py` не запущен или открыт не тот адрес.
+
+1. **Откройте именно `http://127.0.0.1:8080`.** Не `localhost:8080` — на Windows он нередко резолвится в IPv6 `::1`, а установщик по умолчанию слушает `127.0.0.1`. Не открывайте `web/index.html` двойным кликом (`file://`): тогда браузер ищет `/api/…` на диске и показывает «Нет связи с сервером». Не используйте старые `*.e2b.app`.
+2. **Двойной клик по `FIX-SERVER.bat`** (в архиве и в `%LOCALAPPDATA%\JARVIS`, ярлык «Починить связь с сервером» в меню «Пуск»). Скрипт: читает порт из `jarvis.config.json`, находит Python, показывает владельца порта, снимает зависшие процессы, заново поднимает сервер и агент, ждёт `/api/health`, открывает браузер.
+3. **Порт 8080 занят:** `FIX-SERVER.bat -Port 9000` → `http://127.0.0.1:9000`. Или полная переустановка `INSTALL_WINDOWS.bat -Port 9000`.
+4. **Логи:** `%LOCALAPPDATA%\JARVIS\logs\server.err.log`, `server.out.log`, `install.log`. Если `Python не найден` — перезапустите `INSTALL_WINDOWS.bat`, он поставит Python 3.9+.
+5. HUD теперь сам показывает красную плашку с диагнозом (`file://`, `localhost`, мёртвое облако или выключенный сервер) и кнопками `FIX-SERVER.bat` / «Архив с GitHub» / «Повторить».
+
+Стартовый лог сервера больше не советует `localhost`: он печатает точный `bind` и **`ОТКРОЙТЕ НА ЭТОМ ПК: http://127.0.0.1:8080`**.
+
 Альтернативы: запустить `INSTALL_WINDOWS.bat` из клона репозитория, либо скачать **только один BAT** (в запущенном HUD: `/download/INSTALL_WINDOWS.bat`) — он сам загрузит исходники с GitHub.
 
 ```bat
@@ -221,10 +233,12 @@ JARVIS_BASE_URL=http://localhost:11434/v1 JARVIS_MODEL=llama3.1 python jarvis.py
 jarvis.py                  точка входа: server / cli / agent / selftest
 jarvis_agent.py            ОДИН ФАЙЛ для вашего ПК (stdlib only, Windows/macOS/Linux)
 START-HERE.html            автономная инструкция из ZIP (открывается без сервера)
+FIX-SERVER.bat             «не удаётся связаться с сервером» → проверка и перезапуск
 INSTALL_WINDOWS.bat        автоматический установщик Windows (двойной клик)
 UNINSTALL_WINDOWS.bat      удаление сервисов, ярлыков и автозагрузки
 windows/
   setup.ps1                установка / обновление / удаление (PowerShell)
+  fix-server.ps1           диагностика порта/Python и подъём сервера + агента
   tray.ps1                 иконка в системном трее с меню управления
   README.md                документация по Windows-установке
 jarvis/
@@ -267,6 +281,7 @@ start.sh / start.bat       быстрый запуск
 | `GET` | `/download/jarvis_agent.py` | скачать агент одним файлом |
 | `GET` | `/download/JARVIS-Windows.zip` | полный установщик Windows (генерируется на лету) |
 | `GET` | `/download/INSTALL_WINDOWS.bat` · `/download/windows/setup.ps1` | отдельные файлы установщика |
+| `GET` | `/download/FIX-SERVER.bat` · `/download/windows/fix-server.ps1` | лечение «не удаётся связаться с сервером» |
 | `GET` | `/install` | страница «Установить на мой ПК» с прямыми ссылками и командами |
 | `GET` | `/start-here` · `/START-HERE.html` | автономная offline-инструкция из архива (работает и без сервера) |
 
