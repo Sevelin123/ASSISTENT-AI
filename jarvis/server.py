@@ -218,10 +218,14 @@ class Handler(BaseHTTPRequestHandler):
 
         if path in ("/", "/index.html"):
             return self._file(WEB_DIR / "index.html")
+        if path in ("/install", "/install.html"):
+            return self._file(WEB_DIR / "install.html")
         if path in ("/styles.css", "/app.js", "/favicon.svg", "/manifest.json"):
             return self._file(WEB_DIR / path.lstrip("/"))
         if path in ("/jarvis_agent.py", "/download/jarvis_agent.py"):
             return self._file(AGENT_FILE, "jarvis_agent.py")
+        if path in ("/windows/README.md", "/windows/readme.md"):
+            return self._file(BASE_DIR / "windows" / "README.md")
         if path == "/README.md":
             return self._file(BASE_DIR / "README.md")
         # ---- Windows installer ----

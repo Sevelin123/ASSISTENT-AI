@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#03080f" />
+<title>Установить J.A.R.V.I.S. на свой ПК</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<style>
+  :root{
+    --bg:#03080f; --panel:rgba(7,20,32,.78); --line:rgba(74,196,224,.18);
+    --line2:rgba(88,216,240,.42); --cyan:#56e1f5; --teal:#4be3c0; --amber:#ffc46b;
+    --text:#d5ecf4; --dim:#7b9bab; --faint:#4f7080;
+    --mono:ui-monospace,'JetBrains Mono',Consolas,monospace;
+    --disp:'Orbitron','Manrope',system-ui,sans-serif;
+    --body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;overflow-x:hidden}
+  .grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(74,196,224,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(74,196,224,.045) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 85% 75% at 50% 0%,#000,transparent)}
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 60% 45% at 50% 0%,rgba(18,90,122,.22),transparent 70%)}
+  .wrap{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding:0 22px 70px}
+  header{display:flex;align-items:center;gap:14px;padding:24px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .mark{width:38px;height:38px;display:grid;place-items:center;transform:rotate(45deg);
+    border:1px solid var(--line2);background:linear-gradient(135deg,rgba(86,225,245,.15),rgba(74,140,255,.05));box-shadow:0 0 18px rgba(86,225,245,.3)}
+  .mark span{transform:rotate(-45deg);font:700 20px var(--disp);color:var(--cyan);text-shadow:0 0 14px var(--cyan)}
+  .brand{font:700 15px var(--disp);letter-spacing:3px;color:#eafcff}
+  .brand em{display:block;font:400 8px var(--mono);letter-spacing:1.6px;color:var(--faint);font-style:normal;margin-top:3px}
+  .top-links{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+  .top-links a{border:1px solid var(--line);color:var(--dim);text-decoration:none;padding:8px 12px;
+    font:500 9px var(--mono);letter-spacing:1.2px;border-radius:2px;transition:.2s}
+  .top-links a:hover{color:var(--cyan);border-color:var(--line2)}
+
+  .hero{padding:64px 0 46px;text-align:center}
+  .eyebrow{font:500 10px var(--mono);letter-spacing:3px;color:var(--teal);margin-bottom:18px}
+  .eyebrow::before,.eyebrow::after{content:'───';color:var(--faint);margin:0 12px}
+  h1{font:800 clamp(30px,6vw,58px) var(--disp);letter-spacing:3px;color:#eafdff;line-height:1.15;text-shadow:0 0 32px rgba(86,225,245,.32)}
+  h1 span{display:block;color:var(--cyan);font-size:.56em;letter-spacing:5px;margin-top:10px}
+  .lead{max-width:660px;margin:22px auto 0;font-size:15px;color:var(--dim)}
+  .lead b{color:var(--text);font-weight:600}
+  .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:32px 0 12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:15px 22px;text-decoration:none;
+    border:1px solid var(--line);border-radius:2px;color:var(--text);background:rgba(10,28,42,.6);
+    font:600 11px var(--disp);letter-spacing:1.6px;transition:.22s;cursor:pointer}
+  .btn:hover{color:var(--cyan);border-color:var(--line2);box-shadow:0 0 20px rgba(86,225,245,.18);transform:translateY(-2px)}
+  .btn.primary{border-color:var(--cyan);color:#eafdff;background:linear-gradient(90deg,rgba(86,225,245,.18),rgba(75,227,192,.12));
+    box-shadow:0 0 26px rgba(86,225,245,.16)}
+  .btn.primary:hover{background:var(--cyan);color:#04121b;box-shadow:0 0 34px rgba(86,225,245,.5)}
+  .btn.ghost{font-size:9px;color:var(--dim);padding:13px 16px}
+  .mini{font:400 10px var(--mono);color:var(--faint);letter-spacing:.4px}
+  .mini b{color:var(--teal);font-weight:500}
+
+  h2{font:600 13px var(--mono);letter-spacing:2.4px;color:var(--cyan);margin:52px 0 20px;display:flex;align-items:center;gap:10px}
+  h2::after{content:'';flex:1;height:1px;background:var(--line)}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
+  .step{border:1px solid var(--line);background:var(--panel);padding:22px;border-radius:2px;position:relative;transition:.2s}
+  .step:hover{border-color:var(--line2)}
+  .step b.n{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line2);border-radius:50%;
+    font:600 13px var(--disp);color:var(--cyan);margin-bottom:16px;box-shadow:0 0 14px rgba(86,225,245,.14)}
+  .step h3{font:600 15px var(--body);color:#eafdff;margin-bottom:8px}
+  .step p{font-size:12.5px;color:var(--dim)}
+  .step code{display:block;margin-top:12px;font:400 10px var(--mono);color:var(--teal);background:rgba(2,10,17,.8);
+    border:1px solid var(--line);padding:9px 10px;word-break:break-all;border-radius:2px}
+
+  .panel{border:1px solid var(--line);background:var(--panel);padding:24px;border-radius:2px}
+  .panel.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .panel h3{font:600 14px var(--body);color:#eafdff;margin-bottom:10px}
+  .panel p{font-size:12.5px;color:var(--dim);margin-bottom:12px}
+  ul{list-style:none;display:grid;gap:9px}
+  li{font-size:12.5px;color:var(--dim);padding-left:22px;position:relative}
+  li::before{content:'✓';position:absolute;left:0;color:var(--teal);font:600 12px var(--mono)}
+  .code{display:flex;align-items:center;gap:10px;background:rgba(2,10,17,.9);border:1px solid var(--line);padding:11px 12px;margin:12px 0;border-radius:2px;flex-wrap:wrap}
+  .code code{flex:1;min-width:220px;font:400 10.5px var(--mono);color:var(--cyan);word-break:break-all}
+  .code button,.copy{border:1px solid var(--line);background:rgba(86,225,245,.08);color:var(--cyan);
+    font:500 8.5px var(--mono);letter-spacing:1px;padding:6px 9px;border-radius:2px;cursor:pointer}
+  .code button:hover,.copy:hover{background:var(--cyan);color:#04121b}
+  .note{border-left:2px solid var(--amber);background:rgba(255,196,107,.06);padding:12px 14px;margin-top:14px;
+    font-size:12px;color:var(--dim)}
+  .note b{color:var(--amber)}
+  .faq{display:grid;gap:9px}
+  details{border:1px solid var(--line);background:rgba(7,20,32,.6);padding:13px 16px;border-radius:2px}
+  summary{cursor:pointer;font:600 12.5px var(--body);color:var(--text);list-style:none}
+  summary::before{content:'+';color:var(--cyan);font:600 13px var(--mono);margin-right:10px}
+  details[open] summary::before{content:'−'}
+  details p{margin-top:10px;font-size:12px;color:var(--dim)}
+  code.inl{font:400 10.5px var(--mono);color:var(--teal);background:rgba(75,227,192,.08);padding:1px 5px;border-radius:2px}
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    font:400 9.5px var(--mono);color:var(--faint);letter-spacing:.6px}
+  footer a{color:var(--dim);text-decoration:none}
+  footer a:hover{color:var(--cyan)}
+  @media(max-width:720px){.panel.two{grid-template-columns:1fr}.hero{padding:44px 0 30px}h2{margin-top:38px}}
+</style>
+</head>
+<body>
+<div class="grid"></div><div class="glow"></div>
+<div class="wrap">
+
+  <header>
+    <div class="mark"><span>J</span></div>
+    <div class="brand">J.A.R.V.I.S.<em>JUST A RATHER VERY INTELLIGENT SYSTEM</em></div>
+    <div class="top-links">
+      <a href="/">← ОТКРЫТЬ HUD</a>
+      <a href="/README.md">ДОКУМЕНТАЦИЯ</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">ЛОКАЛЬНАЯ УСТАНОВКА · WINDOWS</div>
+    <h1>ЗАПУСТИ ЕГО<span>НА СВОЁМ КОМПЬЮТЕРЕ</span></h1>
+    <p class="lead">Скачай архив, распакуй, <b>двойной клик</b> — и Джарвис будет жить у тебя:
+      сам поставит Python, поднимет сервер с HUD, подключит агент управления ПК, добавит автозагрузку и откроет браузер.
+      <b>Никаких команд и ручных настроек.</b></p>
+    <div class="cta">
+      <a class="btn primary" data-href-origin="/download/JARVIS-Windows.zip" download>↓ СКАЧАТЬ УСТАНОВЩИК (.ZIP)</a>
+      <a class="btn ghost" data-href-origin="/download/INSTALL_WINDOWS.bat" download>↓ ТОЛЬКО .BAT</a>
+      <a class="btn ghost" href="https://codeload.github.com/Sevelin123/ASSISTENT-AI/zip/refs/heads/arena/57b8f59e-assistent-ai">АРХИВ С GITHUB · ВСЕГДА АКТУАЛЬНЫЙ</a>
+    </div>
+    <p class="mini">Версия <b>1.0.0</b> · Windows 10/11 · ~120 КБ · только стандартная библиотека Python · данные остаются локально</p>
+  </section>
+
+  <h2>ТРИ ШАГА</h2>
+  <div class="steps">
+    <div class="step"><b class="n">1</b><h3>Скачай и распакуй</h3>
+      <p>Нажми большую кнопку выше. Правый клик по архиву → <b>«Извлечь все…»</b>. Папка может быть где угодно.</p>
+      <code>JARVIS-Windows.zip → Распаковать</code></div>
+    <div class="step"><b class="n">2</b><h3>Двойной клик</h3>
+      <p>Запусти <b>INSTALL_WINDOWS.bat</b>. Если SmartScreen ругается — «Дополнительные сведения» → «Выполнить в любом случае».</p>
+      <code>INSTALL_WINDOWS.bat ⏎ ~30 сек</code></div>
+    <div class="step"><b class="n">3</b><h3>Разреши микрофон</h3>
+      <p>Браузер откроется сам. Нажми «Активировать систему», разреши микрофон в <b>Chrome / Edge</b> и скажи «Джарвис, который час?».</p>
+      <code>http://127.0.0.1:8080</code></div>
+  </div>
+
+  <h2>ЧТО ОН СДЕЛАЕТ САМ</h2>
+  <div class="panel two">
+    <div>
+      <ul>
+        <li>Найдёт или установит Python 3.9+ (winget → официальный установщик)</li>
+        <li>Скопирует приложение в <code class="inl">%LOCALAPPDATA%\JARVIS</code></li>
+        <li>Запустит сервер HUD и агент управления ПК <b>скрытно</b>, без чёрных окон</li>
+        <li>Подключит агент — «открой блокнот» будет выполняться на твоей машине</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li>Добавит автозагрузку, ярлык на рабочий стол и иконку в трей</li>
+        <li>Проверит готовность сервера, агента и русский голос для озвучки</li>
+        <li>Слушает только <code class="inl">127.0.0.1</code> — доступен лишь с твоего ПК</li>
+        <li>Опасные команды и выключение ПК <b>запрещены по умолчанию</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>НЕ ХОЧЕШЬ УСТАНАВЛИВАТЬ? ПОДКЛЮЧИ ТОЛЬКО СВОЙ ПК</h2>
+  <div class="panel">
+    <h3>Оставь этот HUD в облаке, а команды пусть выполняются у тебя</h3>
+    <p>Скачай один файл <a href="/download/jarvis_agent.py" style="color:var(--cyan)">jarvis_agent.py</a> и запусти на своём компьютере.
+      В HUD сразу загорится «ПК подключён».</p>
+    <div class="code"><code data-origin="/x" data-agent-cmd>python jarvis_agent.py --server ...</code><button data-copy="agent">КОПИРОВАТЬ</button></div>
+    <div class="note"><b>Важно:</b> в этом режиме заметки, задачи и настройки хранятся на облачном сервере,
+      а не у тебя. Для полной автономности используй установщик выше.</div>
+  </div>
+
+  <h2>НЕ WINDOWS</h2>
+  <div class="panel">
+    <p>Linux и macOS: клонируй репозиторий и запусти двумя командами.</p>
+    <div class="code"><code>git clone -b arena/57b8f59e-assistent-ai https://github.com/Sevelin123/ASSISTENT-AI.git &amp;&amp; cd ASSISTENT-AI &amp;&amp; python3 jarvis.py</code><button data-copy="unix">КОПИРОВАТЬ</button></div>
+    <p>Затем <code class="inl">http://localhost:8080</code>. Для управления ПК во втором терминале:
+      <code class="inl">python3 jarvis_agent.py --server http://localhost:8080</code></p>
+  </div>
+
+  <h2>ЧАСТЫЕ ВОПРОСЫ</h2>
+  <div class="faq">
+    <details><summary>Окно мигает и сразу закрывается</summary>
+      <p>Запусти BAT из <code class="inl">cmd</code>, чтобы увидеть ошибку. Подробный лог: <code class="inl">%LOCALAPPDATA%\JARVIS\install.log</code> и <code class="inl">logs\server.log</code>.</p></details>
+    <details><summary>Голос не работает / нет русской озвучки</summary>
+      <p>Распознавание речи требует <b>Chrome или Edge</b> и интернета (браузерный Web Speech API). Для озвучки добавь русский голос: Параметры → Время и язык → Речь → Добавить голоса → Русский. Установщик сам предупредит, если его нет.</p></details>
+    <details><summary>Порт 8080 занят / хочу другой</summary>
+      <p><code class="inl">INSTALL_WINDOWS.bat -Port 9000</code>. Доступ с телефона: <code class="inl">-Lan</code>, затем <code class="inl">ipconfig</code> → <code class="inl">http://IP:8080</code>.</p></details>
+    <details><summary>Как обновить или удалить</summary>
+      <p>Обновление: запусти <code class="inl">INSTALL_WINDOWS.bat</code> заново — заметки и настройки сохранятся. Удаление: <code class="inl">UNINSTALL_WINDOWS.bat</code> (данные останутся), с <code class="inl">-Purge</code> — удалит всё.</p></details>
+    <details><summary>Нужен ли интернет после установки?</summary>
+      <p>Само приложение — нет: Python, сервер, заметки, файлы и агент работают полностью локально. Интернет нужен только браузерному распознаванию речи и (по желанию) облачной языковой модели. Для полностью оффлайн-голоса можно подключить локальный Vosk/Whisper — см. README.</p></details>
+  </div>
+
+  <footer>
+    <span>J.A.R.V.I.S. · v1.0.0 · собран на чистом Python 3 + vanilla JS, без зависимостей</span>
+    <span><a href="/">ОТКРЫТЬ HUD</a> · <a href="/download/JARVIS-Windows.zip">СКАЧАТЬ</a> · <a href="/windows/README.md">ПОДРОБНАЯ ИНСТРУКЦИЯ</a></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var origin = location.origin;
+  document.querySelectorAll('[data-href-origin]').forEach(function(a){
+    a.href = origin + a.getAttribute('data-href-origin');
+  });
+  var cmd = document.querySelector('[data-agent-cmd]');
+  if (cmd) cmd.textContent = 'python jarvis_agent.py --server ' + origin;
+  var unix = 'git clone -b arena/57b8f59e-assistent-ai https://github.com/Sevelin123/ASSISTENT-AI.git && cd ASSISTENT-AI && python3 jarvis.py';
+  function copy(text, btn){
+    var done = function(){ var old=btn.textContent; btn.textContent='СКОПИРОВАНО'; setTimeout(function(){btn.textContent=old;},1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(text, done); });
+    } else fallback(text, done);
+  }
+  function fallback(text, done){
+    var t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0';
+    document.body.appendChild(t); t.select(); try{document.execCommand('copy');done();}catch(e){} document.body.removeChild(t);
+  }
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      copy(btn.getAttribute('data-copy') === 'agent' ? cmd.textContent : unix, btn);
+    });
+  });
+})();
+</script>
+</body>
+</html>

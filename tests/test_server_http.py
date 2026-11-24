@@ -97,6 +97,24 @@ class TestHTTPContract(unittest.TestCase):
                 self.assertEqual(status, 200)
                 self.assertIn(needle, body)
 
+    def test_install_page(self):
+        for path in ("/install", "/install.html"):
+            with self.subTest(path=path):
+                status, headers, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                self.assertIn("text/html", headers.get("Content-Type", ""))
+                for needle in (b"INSTALL_WINDOWS.bat", b"JARVIS-Windows.zip",
+                               b"jarvis_agent.py", b"127.0.0.1:8080"):
+                    self.assertIn(needle, body)
+        status, _, body = self.request("HEAD", "/install")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b"")
+
+    def test_windows_readme_route(self):
+        status, _, body = self.request("GET", "/windows/README.md")
+        self.assertEqual(status, 200)
+        self.assertIn(b"INSTALL_WINDOWS.bat", body)
+
     def test_options_preflight(self):
         status, headers, _ = self.request("OPTIONS", "/api/chat")
         self.assertEqual(status, 204)

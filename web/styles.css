@@ -109,6 +109,14 @@ button { cursor: pointer; }
 }
 .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn:hover { color: var(--cyan); border-color: var(--line-strong); box-shadow: var(--glow); }
+.install-btn {
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap;
+  padding: 9px 12px; border: 1px solid var(--cyan); border-radius: 2px;
+  background: linear-gradient(90deg, rgba(86,225,245,.14), rgba(75,227,192,.1));
+  color: #eafdff; font: 600 9px var(--display); letter-spacing: 1.4px;
+  box-shadow: 0 0 16px rgba(86,225,245,.14); transition: .2s;
+}
+.install-btn:hover { background: var(--cyan); color: #04121b; box-shadow: 0 0 26px rgba(86,225,245,.5); }
 .icon-btn.small { width: 32px; height: 32px; }
 .icon-btn.muted .slash { stroke: var(--red); }
 
@@ -310,7 +318,11 @@ kbd { border: 1px solid var(--line); padding: 2px 5px; border-radius: 2px; color
   font: 600 11px var(--display); letter-spacing: 2.4px; transition: .25s; box-shadow: 0 0 20px rgba(86,225,245,.15); }
 .primary-btn:hover { background: var(--cyan); color: #04121b; box-shadow: 0 0 34px rgba(86,225,245,.5); }
 .primary-btn.wide { margin-top: 8px; }
-.ghost-btn { width: 100%; margin-top: 10px; padding: 9px; background: none; border: 0; color: var(--text-faint); font: 400 11px var(--body); }
+.boot-install { display: block; width: 100%; margin-top: 11px; padding: 10px; text-align: center; text-decoration: none;
+  border: 1px solid var(--line-strong); border-radius: 2px; color: var(--teal);
+  font: 500 10px var(--display); letter-spacing: 1.4px; transition: .2s; }
+.boot-install:hover { background: rgba(75,227,192,.12); color: #eafdff; }
+.ghost-btn { width: 100%; margin-top: 6px; padding: 9px; background: none; border: 0; color: var(--text-faint); font: 400 11px var(--body); }
 .ghost-btn:hover { color: var(--cyan-soft); }
 .boot-note { margin-top: 16px; text-align: center; font: 400 9px var(--mono); color: var(--text-faint); letter-spacing: .5px; }
 

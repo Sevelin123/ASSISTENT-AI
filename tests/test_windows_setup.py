@@ -103,6 +103,7 @@ class TestWindowsBundle(unittest.TestCase):
                 "JARVIS-Windows/jarvis.py",
                 "JARVIS-Windows/jarvis_agent.py",
                 "JARVIS-Windows/web/index.html",
+                "JARVIS-Windows/web/install.html",
                 "JARVIS-Windows/web/app.js",
                 "JARVIS-Windows/jarvis/server.py",
                 "JARVIS-Windows/tests/test_core.py",
@@ -128,8 +129,22 @@ class TestWindowsBundle(unittest.TestCase):
     def test_server_routes_registered(self):
         src = (ROOT / "jarvis/server.py").read_text(encoding="utf-8")
         for route in ("/download/JARVIS-Windows.zip", "/download/INSTALL_WINDOWS.bat",
-                      "/download/windows/", "/download/UNINSTALL_WINDOWS.bat"):
+                      "/download/windows/", "/download/UNINSTALL_WINDOWS.bat",
+                      '"/install"', "/windows/README.md"):
             self.assertIn(route, src)
+
+    def test_hud_links_to_install_page(self):
+        html = (ROOT / "web/index.html").read_text(encoding="utf-8")
+        self.assertIn('href="/install"', html)
+        self.assertIn("НА МОЙ ПК", html)
+        self.assertIn("boot-install", html)
+
+    def test_install_page_has_permanent_github_link(self):
+        page = (ROOT / "web/install.html").read_text(encoding="utf-8")
+        self.assertIn("codeload.github.com", page)
+        self.assertIn("refs/heads/arena/57b8f59e-assistent-ai", page)
+        self.assertNotIn("/zip/6268dbe", page, "stale pinned SHA")
+        self.assertIn("data-href-origin", page)  # works on cloud AND local installs
 
 
 class TestWindowsNativeActions(unittest.TestCase):
