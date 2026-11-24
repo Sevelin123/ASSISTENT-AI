@@ -225,12 +225,14 @@ if ($ready) {
 }
 
 Say 'Не удалось поднять сервер. Что делать:' 'Red'
-Say '1) Откройте именно http://127.0.0.1:8080 (не localhost, не file://, не *.e2b.app).' 'Yellow'
+Say '1) Двойной клик START-JARVIS.bat — видимая консоль покажет точную ошибку. НЕ закрывайте её.' 'Yellow'
+Say '2) Откройте именно http://127.0.0.1:8080 (не localhost, не file://, не *.e2b.app).' 'Yellow'
 if ($owners -gt 0) {
-    Say "2) Порт $Port занят другой программой. Либо закройте её, либо запустите: FIX-SERVER.bat -Port 9000" 'Yellow'
+    Say "3) Порт $Port занят другой программой. Закройте её либо: START-JARVIS.bat -Port 9000 / FIX-SERVER.bat -Port 9000" 'Yellow'
 }
-Say '3) Посмотрите логи в папке logs (server.err.log, server.out.log, install.log).' 'Yellow'
-Say '4) Если Python ставился вручную — перезапустите INSTALL_WINDOWS.bat.' 'Yellow'
+Say '4) Посмотрите логи в папке logs (server.err.log, server.out.log, install.log).' 'Yellow'
+Say '5) Если Python ставился вручную — перезапустите INSTALL_WINDOWS.bat.' 'Yellow'
+Say '6) Консоль пишет online, а Chrome отказывает — отключите прокси для 127.0.0.1;localhost или chrome.exe --no-proxy-server.' 'Yellow'
 $logDir = Join-Path $root 'logs'
 foreach ($name in @('server.err.log', 'server.out.log')) {
     $p = Join-Path $logDir $name

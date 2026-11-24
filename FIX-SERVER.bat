@@ -33,9 +33,11 @@ if "%RC%"=="0" (
   echo   [OK] Server is reachable. Browser should open http://127.0.0.1:8080
 ) else (
   echo   [X] Still no connection. Read the messages above and the logs folder.
-  echo       Quick check: open EXACTLY http://127.0.0.1:8080
-  echo       Another port: FIX-SERVER.bat -Port 9000
-  echo       Reinstall:    INSTALL_WINDOWS.bat
+  echo       Visible mode:  START-JARVIS.bat   (leave the console window OPEN)
+  echo       Quick check:   open EXACTLY http://127.0.0.1:8080
+  echo       Another port:  START-JARVIS.bat -Port 9000 / FIX-SERVER.bat -Port 9000
+  echo       Proxy:         disable proxy for 127.0.0.1;localhost or chrome.exe --no-proxy-server
+  echo       Reinstall:     INSTALL_WINDOWS.bat
 )
 echo.
 pause

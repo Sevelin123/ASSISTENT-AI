@@ -60,9 +60,10 @@ WINDOWS_README = """J.A.R.V.I.S. — автоматическая установ
 
 ОТКРЫВАТЬ НУЖНО ТОЛЬКО http://127.0.0.1:8080
 (не localhost, не file://web/index.html и не старую ссылку *.e2b.app).
-Если браузер пишет «Не удаётся связаться с сервером» — двойной клик
-по FIX-SERVER.bat: он проверит порт, Python, перезапустит сервер и агент
-и покажет логи. Другой порт: FIX-SERVER.bat -Port 9000.
+ERR_CONNECTION_REFUSED = сервер ещё НЕ запущен на этом ПК, это не интернет.
+Двойной клик START-JARVIS.bat — видимая консоль, НЕ закрывайте её.
+Или FIX-SERVER.bat — автоматическая проверка/перезапуск скрытно.
+Другой порт: START-JARVIS.bat -Port 9000 / FIX-SERVER.bat -Port 9000.
 
 Для распознавания речи нужен Chrome или Edge.
 Полная документация: windows/README.md и README.md
@@ -244,6 +245,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(BASE_DIR / "INSTALL_WINDOWS.bat", "INSTALL_WINDOWS.bat")
         if path in ("/UNINSTALL_WINDOWS.bat", "/download/UNINSTALL_WINDOWS.bat"):
             return self._file(BASE_DIR / "UNINSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat")
+        if path in ("/START-JARVIS.bat", "/download/START-JARVIS.bat", "/download/start-jarvis.bat"):
+            return self._file(BASE_DIR / "START-JARVIS.bat", "START-JARVIS.bat")
         if path in ("/FIX-SERVER.bat", "/download/FIX-SERVER.bat", "/download/fix-server.bat"):
             return self._file(BASE_DIR / "FIX-SERVER.bat", "FIX-SERVER.bat")
         if path.startswith("/download/windows/"):
@@ -432,6 +435,6 @@ def serve(host: str | None = None, port: int | None = None, app: JarvisApp | Non
     print(f"  Brain: {app.brain.mode}   |   PC agent: /download/jarvis_agent.py", flush=True)
     if h == "0.0.0.0":
         print(f"  Из локальной сети: http://<IP-этого-ПК>:{p}", flush=True)
-    print("  Нет связи? Двойной клик FIX-SERVER.bat · Архив: /download/JARVIS-Windows.zip\n",
+    print("  ERR_CONNECTION_REFUSED? START-JARVIS.bat (видимая консоль) или FIX-SERVER.bat\n",
           flush=True)
     return server
